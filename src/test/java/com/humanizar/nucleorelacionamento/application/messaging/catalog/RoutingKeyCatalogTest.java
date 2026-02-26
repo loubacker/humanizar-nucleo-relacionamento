@@ -1,0 +1,23 @@
+package com.humanizar.nucleorelacionamento.application.messaging.catalog;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
+class RoutingKeyCatalogTest {
+
+    @Test
+    void shouldIdentifyAcolhimentoInboundKeys() {
+        Assertions.assertTrue(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1));
+        Assertions.assertTrue(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.ACOLHIMENTO_UPDATED_V1));
+        Assertions.assertTrue(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.ACOLHIMENTO_DELETED_V1));
+        Assertions.assertFalse(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.PROGRAMA_CREATED_V1));
+    }
+
+    @Test
+    void shouldIdentifyProgramaInboundKeys() {
+        Assertions.assertTrue(RoutingKeyCatalog.isProgramaInbound(RoutingKeyCatalog.PROGRAMA_CREATED_V1));
+        Assertions.assertTrue(RoutingKeyCatalog.isProgramaInbound(RoutingKeyCatalog.PROGRAMA_UPDATED_V1));
+        Assertions.assertTrue(RoutingKeyCatalog.isProgramaInbound(RoutingKeyCatalog.PROGRAMA_DELETED_V1));
+        Assertions.assertFalse(RoutingKeyCatalog.isProgramaInbound(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1));
+    }
+}
