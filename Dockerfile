@@ -20,7 +20,7 @@ RUN apk add --no-cache libgcc gcompat && addgroup -g 1001 -S appgroup && adduser
 WORKDIR /app
 
 # -- Copia o JAR compilado do stage de build com permissão de acesso ao usuário não-root --
-COPY --from=build --chown=appuser:appgroup /app/target/humanizar-nucleo-relacionamento-service-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build --chown=appuser:appgroup /app/target/humanizar-nucleo-relacionamento-0.0.1-SNAPSHOT.jar app.jar
 
 # -- Configura variáveis de ambiente para otimização de memória e desempenho --
 ENV MALLOC_ARENA_MAX=2
