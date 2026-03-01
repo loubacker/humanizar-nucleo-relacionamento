@@ -63,15 +63,6 @@ spring:
     generate-ddl: true
     open-in-view: false
 
-  # Configurações do Redis para fila de emails
-  data:
-    redis:
-      host: ${REDIS_HOST}
-      port: 6379
-      password: ${REDIS_PASSWORD}
-      database: 0
-      timeout: 2000ms
-
 # Server
 server:
   port: 9001

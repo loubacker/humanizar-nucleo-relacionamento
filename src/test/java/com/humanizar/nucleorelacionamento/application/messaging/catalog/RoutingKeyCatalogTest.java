@@ -6,6 +6,13 @@ import org.junit.jupiter.api.Test;
 class RoutingKeyCatalogTest {
 
     @Test
+    void shouldExposeExpectedProgramaRoutingKeyLiterals() {
+        Assertions.assertEquals("ev.programa.created.v1", RoutingKeyCatalog.PROGRAMA_CREATED_V1);
+        Assertions.assertEquals("ev.programa.updated.v1", RoutingKeyCatalog.PROGRAMA_UPDATED_V1);
+        Assertions.assertEquals("ev.programa.deleted.v1", RoutingKeyCatalog.PROGRAMA_DELETED_V1);
+    }
+
+    @Test
     void shouldIdentifyAcolhimentoInboundKeys() {
         Assertions.assertTrue(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1));
         Assertions.assertTrue(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.ACOLHIMENTO_UPDATED_V1));

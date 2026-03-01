@@ -8,9 +8,9 @@ public final class RoutingKeyCatalog {
     public static final String ACOLHIMENTO_DELETED_V1 = "ev.acolhimento.deleted.v1";
 
     // Inbound — programa
-    public static final String PROGRAMA_CREATED_V1 = "programa.created.v1";
-    public static final String PROGRAMA_UPDATED_V1 = "programa.updated.v1";
-    public static final String PROGRAMA_DELETED_V1 = "programa.deleted.v1";
+    public static final String PROGRAMA_CREATED_V1 = "ev.programa.created.v1";
+    public static final String PROGRAMA_UPDATED_V1 = "ev.programa.updated.v1";
+    public static final String PROGRAMA_DELETED_V1 = "ev.programa.deleted.v1";
 
     // Outbound — nucleo-relacionamento
     public static final String RESPONSAVEL_VINCULADO_V1 = "ev.nucleo.responsavel.vinculado.v1";
