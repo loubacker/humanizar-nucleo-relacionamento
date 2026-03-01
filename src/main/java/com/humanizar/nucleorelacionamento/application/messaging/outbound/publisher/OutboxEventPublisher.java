@@ -1,12 +1,12 @@
 package com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher;
 
-import com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper.OutboxEventMapper;
-import com.humanizar.nucleorelacionamento.domain.model.OutboxEvent;
-import com.humanizar.nucleorelacionamento.domain.port.OutboxEventPort;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper.OutboxEventMapper;
+import com.humanizar.nucleorelacionamento.domain.model.OutboxEvent;
+import com.humanizar.nucleorelacionamento.domain.port.OutboxEventPort;
 
 @Component
 public class OutboxEventPublisher {
@@ -20,8 +20,8 @@ public class OutboxEventPublisher {
     }
 
     public void publish(String routingKey, UUID aggregateId,
-                        UUID correlationId, Object payload,
-                        UUID actorId, String userAgent, String originIp) {
+            UUID correlationId, Object payload,
+            UUID actorId, String userAgent, String originIp) {
         OutboxEvent event = outboxEventMapper.toOutboxEvent(
                 routingKey, aggregateId, correlationId, payload,
                 actorId, userAgent, originIp);
@@ -29,14 +29,14 @@ public class OutboxEventPublisher {
     }
 
     public void publish(String routingKey,
-                        String aggregateType,
-                        UUID aggregateId,
-                        UUID eventId,
-                        UUID correlationId,
-                        Object payload,
-                        UUID actorId,
-                        String userAgent,
-                        String originIp) {
+            String aggregateType,
+            UUID aggregateId,
+            UUID eventId,
+            UUID correlationId,
+            Object payload,
+            UUID actorId,
+            String userAgent,
+            String originIp) {
         OutboxEvent event = outboxEventMapper.toOutboxEvent(
                 routingKey,
                 aggregateType,

@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.humanizar.nucleorelacionamento.domain.model.ProcessedEvent;
 import com.humanizar.nucleorelacionamento.domain.port.ProcessedEventPort;
@@ -23,6 +25,7 @@ public class ProcessedEventAdapter implements ProcessedEventPort {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public ProcessedEvent save(ProcessedEvent processedEvent) {
         ProcessedEventEntity entity = toEntity(processedEvent);
         ProcessedEventEntity saved = processedEventRepository.save(entity);

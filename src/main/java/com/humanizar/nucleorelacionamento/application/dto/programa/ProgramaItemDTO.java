@@ -4,6 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record ProgramaItemDTO(
-        UUID nucleoPatientId,
-        List<UUID> abordagemId) {
+                UUID nucleoPatientId,
+                List<UUID> abordagemId) {
 }

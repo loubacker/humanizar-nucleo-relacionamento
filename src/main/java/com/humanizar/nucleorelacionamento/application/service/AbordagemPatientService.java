@@ -104,7 +104,8 @@ public class AbordagemPatientService {
             }
         }
 
-        log.info("Abordagens reconciliadas. groups={}, correlationId={}", nucleoAbordagemCommands.size(), correlationId);
+        log.info("Abordagens reconciliadas. groups={}, correlationId={}", nucleoAbordagemCommands.size(),
+                correlationId);
     }
 
     @Transactional

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import com.humanizar.nucleorelacionamento.domain.model.enums.OutboxStatus;
 
 import jakarta.persistence.Column;
@@ -17,18 +19,14 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import org.hibernate.annotations.CreationTimestamp;
-
 @Entity
-@Table(name = "outbox_event",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_outbox_event_id", columnNames = "event_id")
-        },
-        indexes = {
-                @Index(name = "idx_outbox_dispatch", columnList = "status,next_retry_at,created_at"),
-                @Index(name = "idx_outbox_correlation", columnList = "correlation_id"),
-                @Index(name = "idx_outbox_aggregate", columnList = "aggregate_type,aggregate_id,created_at")
-        })
+@Table(name = "outbox_event", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_outbox_event_id", columnNames = "event_id")
+}, indexes = {
+        @Index(name = "idx_outbox_dispatch", columnList = "status,next_retry_at,created_at"),
+        @Index(name = "idx_outbox_correlation", columnList = "correlation_id"),
+        @Index(name = "idx_outbox_aggregate", columnList = "aggregate_type,aggregate_id,created_at")
+})
 public class OutboxEventEntity {
 
     @Id
@@ -102,12 +100,12 @@ public class OutboxEventEntity {
     }
 
     public OutboxEventEntity(Long id, UUID eventId, UUID correlationId, String producerService,
-                             String exchangeName, String routingKey, String aggregateType,
-                             UUID aggregateId, Short eventVersion, String payload,
-                             UUID actorId, String userAgent, String originIp,
-                             OutboxStatus status, Integer attemptCount, Integer maxAttempts,
-                             LocalDateTime nextRetryAt, String lastError, LocalDateTime createdAt,
-                             LocalDateTime publishedAt, UUID lockedBy) {
+            String exchangeName, String routingKey, String aggregateType,
+            UUID aggregateId, Short eventVersion, String payload,
+            UUID actorId, String userAgent, String originIp,
+            OutboxStatus status, Integer attemptCount, Integer maxAttempts,
+            LocalDateTime nextRetryAt, String lastError, LocalDateTime createdAt,
+            LocalDateTime publishedAt, UUID lockedBy) {
         this.id = id;
         this.eventId = eventId;
         this.correlationId = correlationId;

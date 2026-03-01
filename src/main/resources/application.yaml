@@ -4,7 +4,11 @@ spring:
   config:
     import:
       - optional:file:.env[.properties]
-      - optional:classpath:config/rabbitmq-config.yaml
+
+  # Configuração de Threads
+  threads:
+    virtual:
+      enabled: true
 
   # Configurações de segurança para Resource Server com JWT
   security:
@@ -37,7 +41,7 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      pool-name: humanizar-programa-atendimento-pool
+      pool-name: humanizar-nucleo-relacionamento-pool
       connection-timeout: 30000
       idle-timeout: 300000
       max-lifetime: 600000
@@ -71,14 +75,6 @@ spring:
 # Server
 server:
   port: 9001
-
-# Service Registry - Redis Service Discovery
-service:
-  registry:
-    enabled: true
-    ttl: 60
-    heartbeat-interval: 30000
-    port: 9001
 
 # Configuração do Actuator (Health Check)
 management:

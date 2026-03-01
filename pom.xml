@@ -80,12 +80,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Dependência Spring Boot OAuth2 Client -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-oauth2-client</artifactId>
-		</dependency>
-
 		<!-- Dependência Spring Boot OAuth2 Resource Server para validação de JWT -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -117,13 +111,7 @@
 			<artifactId>spring-boot-starter-amqp</artifactId>
 		</dependency>
 
-		<!-- Dependência Spring Boot Redis -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-redis</artifactId>
-		</dependency>
-
-		<!-- Jackson DataType JSR310 para Java Time -->
+		<!-- Jackson DataType JSR310 para Java -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
 			<artifactId>jackson-datatype-jsr310</artifactId>

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import com.humanizar.nucleorelacionamento.domain.model.enums.ProcessedResult;
 import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
 
@@ -18,19 +20,15 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
-import org.hibernate.annotations.CreationTimestamp;
-
 @Entity
-@Table(name = "processed_event",
-        uniqueConstraints = {
-                @UniqueConstraint(name = "uk_processed_consumer_event", columnNames = {"consumer_name", "event_id"})
-        },
-        indexes = {
-                @Index(name = "idx_processed_correlation", columnList = "correlation_id"),
-                @Index(name = "idx_processed_event", columnList = "event_id"),
-                @Index(name = "idx_processed_time", columnList = "processed_at"),
-                @Index(name = "idx_processed_reason_code", columnList = "reason_code")
-        })
+@Table(name = "processed_event", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_processed_consumer_event", columnNames = { "consumer_name", "event_id" })
+}, indexes = {
+        @Index(name = "idx_processed_correlation", columnList = "correlation_id"),
+        @Index(name = "idx_processed_event", columnList = "event_id"),
+        @Index(name = "idx_processed_time", columnList = "processed_at"),
+        @Index(name = "idx_processed_reason_code", columnList = "reason_code")
+})
 public class ProcessedEventEntity {
 
     @Id
@@ -84,10 +82,10 @@ public class ProcessedEventEntity {
     }
 
     public ProcessedEventEntity(Long id, String consumerName, UUID eventId, UUID correlationId,
-                                String eventType, String aggregateType, UUID aggregateId,
-                                UUID actorId, String userAgent, String originIp,
-                                LocalDateTime processedAt, ProcessedResult result,
-                                ReasonCode reasonCode, String errorMessage) {
+            String eventType, String aggregateType, UUID aggregateId,
+            UUID actorId, String userAgent, String originIp,
+            LocalDateTime processedAt, ProcessedResult result,
+            ReasonCode reasonCode, String errorMessage) {
         this.id = id;
         this.consumerName = consumerName;
         this.eventId = eventId;

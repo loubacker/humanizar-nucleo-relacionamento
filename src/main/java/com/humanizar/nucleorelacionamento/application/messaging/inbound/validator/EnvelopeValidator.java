@@ -10,49 +10,36 @@ import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
 public class EnvelopeValidator {
 
     public void validate(InboundEnvelope<?> envelope) {
-        String correlationId = envelope.correlationId() != null
-                ? envelope.correlationId().toString()
-                : null;
+        requireNotNull(envelope, "envelope é obrigatorio", null);
+        String correlationId = getCorrelationId(envelope);
 
-        if (envelope.eventId() == null) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, correlationId, "event_id e obrigatorio");
-        }
-        if (envelope.correlationId() == null) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, null, "correlation_id e obrigatorio");
-        }
-        if (envelope.routingKey() == null || envelope.routingKey().isBlank()) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, correlationId, "routing_key e obrigatorio");
-        }
-        if (envelope.eventVersion() < 1) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, correlationId, "event_version deve ser >= 1");
-        }
-        if (envelope.aggregateType() == null || envelope.aggregateType().isBlank()) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, correlationId, "aggregate_type e obrigatorio");
-        }
-        if (envelope.aggregateId() == null) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, correlationId, "aggregate_id e obrigatorio");
-        }
-        if (envelope.actorId() == null) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, correlationId, "actor_id e obrigatorio");
-        }
-        if (envelope.userAgent() == null || envelope.userAgent().isBlank()) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, correlationId, "user_agent e obrigatorio");
-        }
-        if (envelope.originIp() == null || envelope.originIp().isBlank()) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, correlationId, "origin_ip e obrigatorio");
-        }
-        if (envelope.payload() == null) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, correlationId, "payload e obrigatorio");
+        requireNotNull(envelope.eventId(), "event_id é obrigatorio", correlationId);
+        requireNotNull(envelope.correlationId(), "correlation_id é obrigatorio", null);
+        requireNotBlank(envelope.routingKey(), "routing_key é obrigatorio", correlationId);
+        requireTrue(envelope.eventVersion() >= 1, "event_version deve ser >= 1", correlationId);
+        requireNotBlank(envelope.aggregateType(), "aggregate_type é obrigatorio", correlationId);
+        requireNotNull(envelope.aggregateId(), "aggregate_id é obrigatorio", correlationId);
+        requireNotNull(envelope.actorId(), "actor_id é obrigatorio", correlationId);
+        requireNotBlank(envelope.userAgent(), "user_agent é obrigatorio", correlationId);
+        requireNotBlank(envelope.originIp(), "origin_ip é obrigatorio", correlationId);
+        requireNotNull(envelope.payload(), "payload é obrigatorio", correlationId);
+    }
+
+    private String getCorrelationId(InboundEnvelope<?> envelope) {
+        return envelope.correlationId() != null ? envelope.correlationId().toString() : null;
+    }
+
+    private void requireNotNull(Object value, String message, String correlationId) {
+        requireTrue(value != null, message, correlationId);
+    }
+
+    private void requireNotBlank(String value, String message, String correlationId) {
+        requireTrue(value != null && !value.isBlank(), message, correlationId);
+    }
+
+    private void requireTrue(boolean condition, String message, String correlationId) {
+        if (!condition) {
+            throw new NucleoRelacionamentoException(ReasonCode.VALIDATION_ERROR, correlationId, message);
         }
     }
 }

@@ -1,10 +1,10 @@
 package com.humanizar.nucleorelacionamento.domain.model;
 
-import com.humanizar.nucleorelacionamento.domain.model.enums.OutboxStatus;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
+
+import com.humanizar.nucleorelacionamento.domain.model.enums.OutboxStatus;
 
 public class OutboxEvent {
 
@@ -34,12 +34,12 @@ public class OutboxEvent {
     }
 
     public OutboxEvent(Long id, UUID eventId, UUID correlationId, String producerService,
-                       String exchangeName, String routingKey, String aggregateType,
-                       UUID aggregateId, Short eventVersion, String payload,
-                       UUID actorId, String userAgent, String originIp,
-                       OutboxStatus status, Integer attemptCount, Integer maxAttempts,
-                       LocalDateTime nextRetryAt, String lastError, LocalDateTime createdAt,
-                       LocalDateTime publishedAt, UUID lockedBy) {
+            String exchangeName, String routingKey, String aggregateType,
+            UUID aggregateId, Short eventVersion, String payload,
+            UUID actorId, String userAgent, String originIp,
+            OutboxStatus status, Integer attemptCount, Integer maxAttempts,
+            LocalDateTime nextRetryAt, String lastError, LocalDateTime createdAt,
+            LocalDateTime publishedAt, UUID lockedBy) {
         this.id = id;
         this.eventId = eventId;
         this.correlationId = correlationId;

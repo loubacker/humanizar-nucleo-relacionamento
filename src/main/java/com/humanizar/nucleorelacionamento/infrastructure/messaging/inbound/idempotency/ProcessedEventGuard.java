@@ -1,12 +1,12 @@
 package com.humanizar.nucleorelacionamento.infrastructure.messaging.inbound.idempotency;
 
-import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
-import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
-import com.humanizar.nucleorelacionamento.domain.port.ProcessedEventPort;
+import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
-import java.util.UUID;
+import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
+import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
+import com.humanizar.nucleorelacionamento.domain.port.ProcessedEventPort;
 
 @Component
 public class ProcessedEventGuard {

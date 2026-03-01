@@ -5,5 +5,5 @@ import java.util.List;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.nucleo.NucleoAbordagemCommand;
 
 public record ProgramaCreatedCommand(
-                List<NucleoAbordagemCommand> nucleoAbordagens) {
+        List<NucleoAbordagemCommand> nucleoAbordagens) {
 }

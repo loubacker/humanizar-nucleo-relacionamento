@@ -81,8 +81,9 @@ public class AcolhimentoConsumer {
             byte[] body = message.getBody();
             routingKey = message.getMessageProperties().getReceivedRoutingKey();
 
-            InboundEnvelopeDTO<Object> envelopeDto = parseEnvelope(body, new TypeReference<InboundEnvelopeDTO<Object>>() {
-            });
+            InboundEnvelopeDTO<Object> envelopeDto = parseEnvelope(body,
+                    new TypeReference<InboundEnvelopeDTO<Object>>() {
+                    });
             envelope = inboundEnvelopeMapper.toCommandEnvelope(envelopeDto);
             envelopeValidator.validate(envelope);
 
@@ -141,7 +142,8 @@ public class AcolhimentoConsumer {
                 InboundEnvelopeDTO<AcolhimentoCreatedDTO> createdEnvelopeDto = parseEnvelope(body,
                         new TypeReference<InboundEnvelopeDTO<AcolhimentoCreatedDTO>>() {
                         });
-                AcolhimentoCreatedCommand createdCommand = acolhimentoInboundMapper.toCreatedCommand(createdEnvelopeDto.payload());
+                AcolhimentoCreatedCommand createdCommand = acolhimentoInboundMapper
+                        .toCreatedCommand(createdEnvelopeDto.payload());
                 payloadValidator.validateCreated(createdCommand, correlationId);
 
                 yield messageErrorHandler.handle(CONSUMER_NAME, envelope.eventId(),
@@ -161,7 +163,8 @@ public class AcolhimentoConsumer {
                 InboundEnvelopeDTO<AcolhimentoUpdatedDTO> updatedEnvelopeDto = parseEnvelope(body,
                         new TypeReference<InboundEnvelopeDTO<AcolhimentoUpdatedDTO>>() {
                         });
-                AcolhimentoUpdatedCommand updatedCommand = acolhimentoInboundMapper.toUpdatedCommand(updatedEnvelopeDto.payload());
+                AcolhimentoUpdatedCommand updatedCommand = acolhimentoInboundMapper
+                        .toUpdatedCommand(updatedEnvelopeDto.payload());
                 payloadValidator.validateUpdated(updatedCommand, correlationId);
 
                 yield messageErrorHandler.handle(CONSUMER_NAME, envelope.eventId(),
@@ -180,7 +183,8 @@ public class AcolhimentoConsumer {
                 InboundEnvelopeDTO<AcolhimentoDeletedDTO> deletedEnvelopeDto = parseEnvelope(body,
                         new TypeReference<InboundEnvelopeDTO<AcolhimentoDeletedDTO>>() {
                         });
-                AcolhimentoDeletedCommand deletedCommand = acolhimentoInboundMapper.toDeletedCommand(deletedEnvelopeDto.payload());
+                AcolhimentoDeletedCommand deletedCommand = acolhimentoInboundMapper
+                        .toDeletedCommand(deletedEnvelopeDto.payload());
                 payloadValidator.validateDeleted(deletedCommand, correlationId);
 
                 yield messageErrorHandler.handle(CONSUMER_NAME, envelope.eventId(),

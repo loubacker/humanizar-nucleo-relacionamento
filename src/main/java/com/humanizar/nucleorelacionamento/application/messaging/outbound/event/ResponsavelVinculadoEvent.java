@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record ResponsavelVinculadoEvent(
-        UUID patientId,
-        List<NucleoPatientPayload> nucleoPatient
-) {
+                UUID patientId,
+                List<NucleoPatientPayload> nucleoPatient) {
 }

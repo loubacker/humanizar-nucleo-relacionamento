@@ -7,8 +7,7 @@ public record EventOutcome(
         ProcessedResult result,
         ReasonCode reasonCode,
         String errorMessage,
-        boolean retryable
-) {
+        boolean retryable) {
 
     public static EventOutcome success() {
         return new EventOutcome(ProcessedResult.SUCCESS, null, null, false);

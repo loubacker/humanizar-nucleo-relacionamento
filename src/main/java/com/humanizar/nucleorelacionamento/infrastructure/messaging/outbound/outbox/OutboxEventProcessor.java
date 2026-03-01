@@ -1,20 +1,20 @@
 package com.humanizar.nucleorelacionamento.infrastructure.messaging.outbound.outbox;
 
-import com.humanizar.nucleorelacionamento.domain.model.OutboxEvent;
-import com.humanizar.nucleorelacionamento.domain.model.enums.OutboxStatus;
-import com.humanizar.nucleorelacionamento.domain.port.OutboxEventPort;
-import com.humanizar.nucleorelacionamento.infrastructure.messaging.outbound.rabbit.RabbitOutboxPublisher;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import com.humanizar.nucleorelacionamento.domain.model.OutboxEvent;
+import com.humanizar.nucleorelacionamento.domain.model.enums.OutboxStatus;
+import com.humanizar.nucleorelacionamento.domain.port.OutboxEventPort;
+import com.humanizar.nucleorelacionamento.infrastructure.messaging.outbound.rabbit.RabbitOutboxPublisher;
 
 @Component
 public class OutboxEventProcessor {
@@ -28,8 +28,8 @@ public class OutboxEventProcessor {
     private final OutboxRetryPolicy retryPolicy;
 
     public OutboxEventProcessor(OutboxEventPort outboxEventPort,
-                                RabbitOutboxPublisher rabbitOutboxPublisher,
-                                OutboxRetryPolicy retryPolicy) {
+            RabbitOutboxPublisher rabbitOutboxPublisher,
+            OutboxRetryPolicy retryPolicy) {
         this.outboxEventPort = outboxEventPort;
         this.rabbitOutboxPublisher = rabbitOutboxPublisher;
         this.retryPolicy = retryPolicy;

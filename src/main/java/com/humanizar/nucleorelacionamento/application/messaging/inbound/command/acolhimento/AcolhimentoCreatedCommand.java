@@ -6,7 +6,7 @@ import java.util.UUID;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.ResponsavelCommand;
 
 public record AcolhimentoCreatedCommand(
-                UUID patientId,
-                UUID nucleoId,
-                List<ResponsavelCommand> nucleoPatientResponsavel) {
+        UUID patientId,
+        UUID nucleoId,
+        List<ResponsavelCommand> nucleoPatientResponsavel) {
 }

@@ -81,8 +81,9 @@ public class ProgramaAtendimentoConsumer {
             byte[] body = message.getBody();
             routingKey = message.getMessageProperties().getReceivedRoutingKey();
 
-            InboundEnvelopeDTO<Object> envelopeDto = parseEnvelope(body, new TypeReference<InboundEnvelopeDTO<Object>>() {
-            });
+            InboundEnvelopeDTO<Object> envelopeDto = parseEnvelope(body,
+                    new TypeReference<InboundEnvelopeDTO<Object>>() {
+                    });
             envelope = inboundEnvelopeMapper.toCommandEnvelope(envelopeDto);
             envelopeValidator.validate(envelope);
 
@@ -141,7 +142,8 @@ public class ProgramaAtendimentoConsumer {
                 InboundEnvelopeDTO<List<ProgramaItemDTO>> createdEnvelopeDto = parseEnvelope(body,
                         new TypeReference<InboundEnvelopeDTO<List<ProgramaItemDTO>>>() {
                         });
-                ProgramaCreatedCommand createdCommand = programaInboundMapper.toCreatedCommand(createdEnvelopeDto.payload());
+                ProgramaCreatedCommand createdCommand = programaInboundMapper
+                        .toCreatedCommand(createdEnvelopeDto.payload());
                 payloadValidator.validateCreated(createdCommand, correlationId);
 
                 yield messageErrorHandler.handle(CONSUMER_NAME, envelope.eventId(),
@@ -158,7 +160,8 @@ public class ProgramaAtendimentoConsumer {
                 InboundEnvelopeDTO<List<ProgramaItemDTO>> updatedEnvelopeDto = parseEnvelope(body,
                         new TypeReference<InboundEnvelopeDTO<List<ProgramaItemDTO>>>() {
                         });
-                ProgramaUpdatedCommand updatedCommand = programaInboundMapper.toUpdatedCommand(updatedEnvelopeDto.payload());
+                ProgramaUpdatedCommand updatedCommand = programaInboundMapper
+                        .toUpdatedCommand(updatedEnvelopeDto.payload());
                 payloadValidator.validateUpdated(updatedCommand, correlationId);
 
                 yield messageErrorHandler.handle(CONSUMER_NAME, envelope.eventId(),
@@ -175,7 +178,8 @@ public class ProgramaAtendimentoConsumer {
                 InboundEnvelopeDTO<ProgramaDeletedDTO> deletedEnvelopeDto = parseEnvelope(body,
                         new TypeReference<InboundEnvelopeDTO<ProgramaDeletedDTO>>() {
                         });
-                ProgramaDeletedCommand deletedCommand = programaInboundMapper.toDeletedCommand(deletedEnvelopeDto.payload());
+                ProgramaDeletedCommand deletedCommand = programaInboundMapper
+                        .toDeletedCommand(deletedEnvelopeDto.payload());
                 payloadValidator.validateDeleted(deletedCommand, correlationId);
 
                 yield messageErrorHandler.handle(CONSUMER_NAME, envelope.eventId(),

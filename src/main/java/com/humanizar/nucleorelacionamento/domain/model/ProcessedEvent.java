@@ -1,11 +1,11 @@
 package com.humanizar.nucleorelacionamento.domain.model;
 
-import com.humanizar.nucleorelacionamento.domain.model.enums.ProcessedResult;
-import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
-
 import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
+
+import com.humanizar.nucleorelacionamento.domain.model.enums.ProcessedResult;
+import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
 
 public class ProcessedEvent {
 
@@ -28,10 +28,10 @@ public class ProcessedEvent {
     }
 
     public ProcessedEvent(Long id, String consumerName, UUID eventId, UUID correlationId,
-                          String eventType, String aggregateType, UUID aggregateId,
-                          UUID actorId, String userAgent, String originIp,
-                          LocalDateTime processedAt, ProcessedResult result,
-                          ReasonCode reasonCode, String errorMessage) {
+            String eventType, String aggregateType, UUID aggregateId,
+            UUID actorId, String userAgent, String originIp,
+            LocalDateTime processedAt, ProcessedResult result,
+            ReasonCode reasonCode, String errorMessage) {
         this.id = id;
         this.consumerName = consumerName;
         this.eventId = eventId;

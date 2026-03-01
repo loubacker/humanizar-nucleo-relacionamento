@@ -1,15 +1,15 @@
 package com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import org.springframework.stereotype.Component;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.ExchangeCatalog;
 import com.humanizar.nucleorelacionamento.domain.model.OutboxEvent;
 import com.humanizar.nucleorelacionamento.domain.model.enums.OutboxStatus;
-
-import org.springframework.stereotype.Component;
-
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Component
 public class OutboxEventMapper {
@@ -26,8 +26,8 @@ public class OutboxEventMapper {
     }
 
     public OutboxEvent toOutboxEvent(String routingKey, UUID aggregateId,
-                                     UUID correlationId, Object payload,
-                                     UUID actorId, String userAgent, String originIp) {
+            UUID correlationId, Object payload,
+            UUID actorId, String userAgent, String originIp) {
         return toOutboxEvent(
                 routingKey,
                 AGGREGATE_TYPE,
@@ -41,14 +41,14 @@ public class OutboxEventMapper {
     }
 
     public OutboxEvent toOutboxEvent(String routingKey,
-                                     String aggregateType,
-                                     UUID aggregateId,
-                                     UUID eventId,
-                                     UUID correlationId,
-                                     Object payload,
-                                     UUID actorId,
-                                     String userAgent,
-                                     String originIp) {
+            String aggregateType,
+            UUID aggregateId,
+            UUID eventId,
+            UUID correlationId,
+            Object payload,
+            UUID actorId,
+            String userAgent,
+            String originIp) {
         String resolvedAggregateType = aggregateType != null && !aggregateType.isBlank()
                 ? aggregateType
                 : AGGREGATE_TYPE;

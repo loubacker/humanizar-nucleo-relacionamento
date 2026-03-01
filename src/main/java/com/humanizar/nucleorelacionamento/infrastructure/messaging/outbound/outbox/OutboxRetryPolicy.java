@@ -1,9 +1,9 @@
 package com.humanizar.nucleorelacionamento.infrastructure.messaging.outbound.outbox;
 
-import org.springframework.stereotype.Component;
-
 import java.time.Duration;
 import java.time.LocalDateTime;
+
+import org.springframework.stereotype.Component;
 
 @Component
 public class OutboxRetryPolicy {

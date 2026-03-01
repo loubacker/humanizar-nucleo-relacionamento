@@ -6,7 +6,7 @@ import java.util.UUID;
 import com.humanizar.nucleorelacionamento.application.dto.ResponsavelDTO;
 
 public record AcolhimentoCreatedDTO(
-        UUID patientId,
-        UUID nucleoId,
-        List<ResponsavelDTO> nucleoPatientResponsavel) {
+                UUID patientId,
+                UUID nucleoId,
+                List<ResponsavelDTO> nucleoPatientResponsavel) {
 }

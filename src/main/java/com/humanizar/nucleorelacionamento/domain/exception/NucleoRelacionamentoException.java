@@ -9,8 +9,8 @@ public class NucleoRelacionamentoException extends RuntimeException {
     private final String correlationId;
 
     public NucleoRelacionamentoException(ReasonCode reasonCode,
-                                         String correlationId,
-                                         String message) {
+            String correlationId,
+            String message) {
         super(resolveMessage(reasonCode, message));
         this.reasonCode = reasonCode;
         this.message = resolveMessage(reasonCode, message);
@@ -18,7 +18,7 @@ public class NucleoRelacionamentoException extends RuntimeException {
     }
 
     public NucleoRelacionamentoException(ReasonCode reasonCode,
-                                         String correlationId) {
+            String correlationId) {
         this(reasonCode, correlationId, null);
     }
 

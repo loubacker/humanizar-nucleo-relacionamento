@@ -8,6 +8,8 @@ import java.util.UUID;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.humanizar.nucleorelacionamento.domain.model.OutboxEvent;
 import com.humanizar.nucleorelacionamento.domain.model.enums.OutboxStatus;
@@ -25,6 +27,7 @@ public class OutboxEventAdapter implements OutboxEventPort {
     }
 
     @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public OutboxEvent save(OutboxEvent outboxEvent) {
         OutboxEventEntity entity = toEntity(outboxEvent);
         OutboxEventEntity saved = outboxEventRepository.save(entity);
