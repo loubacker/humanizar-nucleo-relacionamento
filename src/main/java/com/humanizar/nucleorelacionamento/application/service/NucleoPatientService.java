@@ -2,6 +2,7 @@ package com.humanizar.nucleorelacionamento.application.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -11,9 +12,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.humanizar.nucleorelacionamento.application.dto.NucleoPatientDTO;
+import com.humanizar.nucleorelacionamento.application.dto.ResponsavelDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.ResponsavelCommand;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.nucleo.NucleoPatientCommand;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.event.NucleoPatientPayload;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.event.ResponsavelDesvinculadoEvent;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.event.ResponsavelPayload;
@@ -49,22 +50,40 @@ public class NucleoPatientService {
         }
 
         @Transactional
-        public void createNucleoPatient(UUID patientId, UUID nucleoId,
-                        List<ResponsavelCommand> responsaveis,
+        public void createNucleoPatient(UUID nucleoPatientId, UUID patientId, UUID nucleoId,
+                        List<ResponsavelDTO> responsaveis,
                         UUID correlationId,
                         UUID actorId, String userAgent, String originIp) {
                 String corrId = correlationId != null ? correlationId.toString() : null;
+
+                if (nucleoPatientId == null) {
+                        throw new NucleoRelacionamentoException(
+                                        ReasonCode.VALIDATION_ERROR, corrId, "nucleoPatientId e obrigatorio");
+                }
 
                 if (responsaveis == null || responsaveis.isEmpty()) {
                         throw new NucleoRelacionamentoException(ReasonCode.RESPONSAVEL_REQUIRED, corrId);
                 }
 
-                if (nucleoPatientPort.findByPatientIdAndNucleoId(patientId, nucleoId).isPresent()) {
-                        log.info("NucleoPatient ja existe para patientId={}, nucleoId={}. No-op.", patientId, nucleoId);
-                        return;
+                if (nucleoPatientPort.existsById(nucleoPatientId)) {
+                        throw new NucleoRelacionamentoException(
+                                        ReasonCode.VALIDATION_ERROR, corrId,
+                                        "nucleoPatientId ja existe: " + nucleoPatientId);
+                }
+
+                Optional<NucleoPatient> existingByPatientAndNucleo = nucleoPatientPort
+                                .findByPatientIdAndNucleoId(patientId, nucleoId);
+                if (existingByPatientAndNucleo.isPresent()
+                                && !nucleoPatientId.equals(existingByPatientAndNucleo.get().getId())) {
+                        throw new NucleoRelacionamentoException(
+                                        ReasonCode.VALIDATION_ERROR, corrId,
+                                        "Conflito de identidade para patientId/nucleoId. expectedNucleoPatientId="
+                                                        + existingByPatientAndNucleo.get().getId()
+                                                        + ", received=" + nucleoPatientId);
                 }
 
                 NucleoPatient nucleo = NucleoPatient.builder()
+                                .id(nucleoPatientId)
                                 .patientId(patientId)
                                 .nucleoId(nucleoId)
                                 .build();
@@ -85,37 +104,66 @@ public class NucleoPatientService {
         }
 
         @Transactional
-        public void reconcileNucleoPatients(UUID patientId, List<NucleoPatientCommand> incomingNucleoCommands,
+        public void applyNucleoPatientSnapshot(UUID patientId, List<NucleoPatientDTO> incomingNucleoCommands,
                         UUID correlationId,
                         UUID actorId, String userAgent, String originIp) {
                 String corrId = correlationId != null ? correlationId.toString() : null;
+                if (incomingNucleoCommands == null || incomingNucleoCommands.isEmpty()) {
+                        throw new NucleoRelacionamentoException(
+                                        ReasonCode.VALIDATION_ERROR, corrId, "nucleoPatient e obrigatorio");
+                }
 
                 List<NucleoPatient> currentNucleos = nucleoPatientPort.findAllByPatientId(patientId);
-                Set<UUID> incomingNucleoIds = incomingNucleoCommands.stream()
-                                .map(NucleoPatientCommand::nucleoId)
+                Set<UUID> incomingNucleoPatientIds = incomingNucleoCommands.stream()
+                                .map(NucleoPatientDTO::nucleoPatientId)
                                 .collect(Collectors.toSet());
-                Map<UUID, NucleoPatient> currentByNucleoId = currentNucleos.stream()
-                                .collect(Collectors.toMap(NucleoPatient::getNucleoId, n -> n));
+                Map<UUID, NucleoPatient> currentByNucleoPatientId = currentNucleos.stream()
+                                .collect(Collectors.toMap(NucleoPatient::getId, n -> n));
 
                 for (NucleoPatient current : currentNucleos) {
-                        if (!incomingNucleoIds.contains(current.getNucleoId())) {
+                        if (!incomingNucleoPatientIds.contains(current.getId())) {
                                 deleteNucleo(current, patientId, correlationId,
                                                 actorId, userAgent, originIp, corrId);
                         }
                 }
 
-                for (NucleoPatientCommand incomingNucleoCommand : incomingNucleoCommands) {
-                        NucleoPatient existing = currentByNucleoId.get(incomingNucleoCommand.nucleoId());
+                for (NucleoPatientDTO incomingNucleoCommand : incomingNucleoCommands) {
+                        NucleoPatient existing = currentByNucleoPatientId.get(incomingNucleoCommand.nucleoPatientId());
                         if (existing == null) {
-                                createNucleoPatient(patientId, incomingNucleoCommand.nucleoId(),
+                                if (nucleoPatientPort.existsById(incomingNucleoCommand.nucleoPatientId())) {
+                                        throw new NucleoRelacionamentoException(
+                                                        ReasonCode.VALIDATION_ERROR, corrId,
+                                                        "nucleoPatientId pertence a outro paciente: "
+                                                                        + incomingNucleoCommand.nucleoPatientId());
+                                }
+
+                                createNucleoPatient(incomingNucleoCommand.nucleoPatientId(), patientId,
+                                                incomingNucleoCommand.nucleoId(),
                                                 incomingNucleoCommand.nucleoPatientResponsavel(), correlationId,
                                                 actorId, userAgent, originIp);
                         } else {
+                                if (!existing.getNucleoId().equals(incomingNucleoCommand.nucleoId())) {
+                                        throw new NucleoRelacionamentoException(
+                                                        ReasonCode.VALIDATION_ERROR, corrId,
+                                                        "nucleoId divergente para nucleoPatientId="
+                                                                        + incomingNucleoCommand.nucleoPatientId()
+                                                                        + ". expected=" + existing.getNucleoId()
+                                                                        + ", received="
+                                                                        + incomingNucleoCommand.nucleoId());
+                                }
                                 reconcileResponsaveis(existing, incomingNucleoCommand.nucleoPatientResponsavel(),
                                                 patientId, correlationId,
                                                 actorId, userAgent, originIp);
                         }
                 }
+        }
+
+        @Transactional
+        public void reconcileNucleoPatients(UUID patientId, List<NucleoPatientDTO> incomingNucleoCommands,
+                        UUID correlationId,
+                        UUID actorId, String userAgent, String originIp) {
+                applyNucleoPatientSnapshot(patientId, incomingNucleoCommands, correlationId, actorId, userAgent,
+                                originIp);
         }
 
         @Transactional
@@ -152,7 +200,7 @@ public class NucleoPatientService {
         }
 
         private void reconcileResponsaveis(NucleoPatient existing,
-                        List<ResponsavelCommand> incomingResponsaveis,
+                        List<ResponsavelDTO> incomingResponsaveis,
                         UUID patientId, UUID correlationId,
                         UUID actorId, String userAgent, String originIp) {
                 List<NucleoPatientResponsavel> currentResponsaveis = responsavelPort
@@ -162,7 +210,7 @@ public class NucleoPatientService {
                                 .map(NucleoPatientResponsavel::getResponsavelId)
                                 .collect(Collectors.toSet());
                 Set<UUID> incomingIds = incomingResponsaveis.stream()
-                                .map(ResponsavelCommand::responsavelId)
+                                .map(ResponsavelDTO::responsavelId)
                                 .collect(Collectors.toSet());
 
                 String corrId = correlationId != null ? correlationId.toString() : null;

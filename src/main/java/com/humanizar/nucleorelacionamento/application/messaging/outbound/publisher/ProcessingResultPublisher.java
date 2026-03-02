@@ -6,9 +6,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.ExchangeCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.InboundEnvelope;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.event.ProcessingResultEnvelopeEvent;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
@@ -28,7 +28,7 @@ public class ProcessingResultPublisher {
                 this.outboxEventPublisher = outboxEventPublisher;
         }
 
-        public void publishProcessed(InboundEnvelope<?> inboundEnvelope, String upStreamRoutingKey) {
+        public void publishProcessed(InboundEnvelopeDTO<?> inboundEnvelope, String upStreamRoutingKey) {
                 String processedRoutingKey = resolveProcessedRoutingKey(upStreamRoutingKey, inboundEnvelope);
                 LocalDateTime now = LocalDateTime.now();
 
@@ -69,7 +69,7 @@ public class ProcessingResultPublisher {
                                 inboundEnvelope.correlationId());
         }
 
-        public void publishRejected(InboundEnvelope<?> inboundEnvelope,
+        public void publishRejected(InboundEnvelopeDTO<?> inboundEnvelope,
                         String upStreamRoutingKey,
                         EventOutcome eventOutcome) {
                 String rejectedRoutingKey = resolveRejectedRoutingKey(upStreamRoutingKey, inboundEnvelope);
@@ -114,7 +114,7 @@ public class ProcessingResultPublisher {
                                 inboundEnvelope.correlationId());
         }
 
-        private String resolveProcessedRoutingKey(String upStreamRoutingKey, InboundEnvelope<?> inboundEnvelope) {
+        private String resolveProcessedRoutingKey(String upStreamRoutingKey, InboundEnvelopeDTO<?> inboundEnvelope) {
                 if (RoutingKeyCatalog.isAcolhimentoInbound(upStreamRoutingKey)) {
                         return RoutingKeyCatalog.ACOLHIMENTO_PROCESSED_V1;
                 }
@@ -129,7 +129,7 @@ public class ProcessingResultPublisher {
                                                 + upStreamRoutingKey);
         }
 
-        private String resolveRejectedRoutingKey(String upStreamRoutingKey, InboundEnvelope<?> inboundEnvelope) {
+        private String resolveRejectedRoutingKey(String upStreamRoutingKey, InboundEnvelopeDTO<?> inboundEnvelope) {
                 if (RoutingKeyCatalog.isAcolhimentoInbound(upStreamRoutingKey)) {
                         return RoutingKeyCatalog.ACOLHIMENTO_REJECTED_V1;
                 }

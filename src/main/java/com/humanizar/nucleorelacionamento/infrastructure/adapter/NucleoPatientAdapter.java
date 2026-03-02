@@ -80,8 +80,12 @@ public class NucleoPatientAdapter implements NucleoPatientPort {
     }
 
     private NucleoPatientEntity toEntity(NucleoPatient domain) {
+        UUID id = Objects.requireNonNull(
+                domain.getId(),
+                "id (nucleoPatientId) e obrigatorio para persistir NucleoPatient");
+
         NucleoPatientEntity entity = new NucleoPatientEntity();
-        entity.setId(domain.getId());
+        entity.setId(id);
         entity.setPatientId(domain.getPatientId());
         entity.setNucleoId(domain.getNucleoId());
         entity.setCreatedAt(domain.getCreatedAt());

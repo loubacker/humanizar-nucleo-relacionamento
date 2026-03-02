@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record NucleoPatientDTO(
+        UUID nucleoPatientId,
         UUID nucleoId,
         List<ResponsavelDTO> nucleoPatientResponsavel) {
 }

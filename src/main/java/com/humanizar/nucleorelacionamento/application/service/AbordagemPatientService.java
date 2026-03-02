@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.nucleo.NucleoAbordagemCommand;
+import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDTO;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.AbordagemPatient;
 import com.humanizar.nucleorelacionamento.domain.model.NucleoPatient;
@@ -34,12 +34,12 @@ public class AbordagemPatientService {
     }
 
     @Transactional
-    public void createAbordagens(List<NucleoAbordagemCommand> nucleoAbordagemCommands, UUID correlationId) {
+    public void createAbordagens(List<ProgramaDTO> nucleoAbordagemCommands, UUID correlationId) {
         String corrId = correlationId != null ? correlationId.toString() : null;
 
         List<AbordagemPatient> toSave = new ArrayList<>();
 
-        for (NucleoAbordagemCommand nucleoAbordagemCommand : nucleoAbordagemCommands) {
+        for (ProgramaDTO nucleoAbordagemCommand : nucleoAbordagemCommands) {
             if (!nucleoPatientPort.existsById(nucleoAbordagemCommand.nucleoPatientId())) {
                 throw new NucleoRelacionamentoException(ReasonCode.NUCLEO_PATIENT_NOT_FOUND, corrId,
                         "NucleoPatient nao encontrado: " + nucleoAbordagemCommand.nucleoPatientId());
@@ -66,10 +66,10 @@ public class AbordagemPatientService {
     }
 
     @Transactional
-    public void reconcileAbordagens(List<NucleoAbordagemCommand> nucleoAbordagemCommands, UUID correlationId) {
+    public void reconcileAbordagens(List<ProgramaDTO> nucleoAbordagemCommands, UUID correlationId) {
         String corrId = correlationId != null ? correlationId.toString() : null;
 
-        for (NucleoAbordagemCommand nucleoAbordagemCommand : nucleoAbordagemCommands) {
+        for (ProgramaDTO nucleoAbordagemCommand : nucleoAbordagemCommands) {
             if (!nucleoPatientPort.existsById(nucleoAbordagemCommand.nucleoPatientId())) {
                 throw new NucleoRelacionamentoException(ReasonCode.NUCLEO_PATIENT_NOT_FOUND, corrId,
                         "NucleoPatient nao encontrado: " + nucleoAbordagemCommand.nucleoPatientId());

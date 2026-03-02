@@ -15,8 +15,8 @@ import org.mockito.Mock;
 import static org.mockito.Mockito.verify;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.InboundEnvelope;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
 import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
 
@@ -34,7 +34,7 @@ class ProcessingResultPublisherTest {
 
     @Test
     void shouldPublishProcessedForAcolhimentoRouting() {
-        InboundEnvelope<Object> envelope = envelope(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1, "acolhimento");
+        InboundEnvelopeDTO<Object> envelope = envelope(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1, "acolhimento");
 
         processingResultPublisher.publishProcessed(envelope, RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1);
 
@@ -54,7 +54,7 @@ class ProcessingResultPublisherTest {
 
     @Test
     void shouldPublishRejectedForProgramaRouting() {
-        InboundEnvelope<Object> envelope = envelope(RoutingKeyCatalog.PROGRAMA_UPDATED_V1, "programa-atendimento");
+        InboundEnvelopeDTO<Object> envelope = envelope(RoutingKeyCatalog.PROGRAMA_UPDATED_V1, "programa-atendimento");
         EventOutcome outcome = EventOutcome.failed(ReasonCode.VALIDATION_ERROR);
 
         processingResultPublisher.publishRejected(envelope, RoutingKeyCatalog.PROGRAMA_UPDATED_V1, outcome);
@@ -74,12 +74,12 @@ class ProcessingResultPublisherTest {
         assertEquals(false, outcome.retryable());
     }
 
-    private InboundEnvelope<Object> envelope(String routingKey, String aggregateType) {
+    private InboundEnvelopeDTO<Object> envelope(String routingKey, String aggregateType) {
         UUID eventId = UUID.randomUUID();
         UUID correlationId = UUID.randomUUID();
         UUID aggregateId = UUID.randomUUID();
         UUID actorId = UUID.randomUUID();
-        return new InboundEnvelope<>(
+        return new InboundEnvelopeDTO<>(
                 eventId,
                 correlationId,
                 "humanizar-acolhimento",

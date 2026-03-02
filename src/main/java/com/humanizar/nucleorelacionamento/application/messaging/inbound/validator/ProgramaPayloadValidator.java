@@ -4,36 +4,32 @@ import java.util.List;
 
 import org.springframework.stereotype.Component;
 
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.nucleo.NucleoAbordagemCommand;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.programa.ProgramaCreatedCommand;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.programa.ProgramaDeletedCommand;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.programa.ProgramaUpdatedCommand;
+import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDTO;
+import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDeletedDTO;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
 
 @Component
 public class ProgramaPayloadValidator {
 
-    public void validateCreated(ProgramaCreatedCommand command, String correlationId) {
-        requireNotNull(command, "payload programa.created e obrigatorio", correlationId);
-        validateAbordagemList(command.nucleoAbordagens(), correlationId);
+    public void validateCreated(List<ProgramaDTO> payload, String correlationId) {
+        validateAbordagemList(payload, correlationId);
     }
 
-    public void validateUpdated(ProgramaUpdatedCommand command, String correlationId) {
-        requireNotNull(command, "payload programa.updated e obrigatorio", correlationId);
-        validateAbordagemList(command.nucleoAbordagens(), correlationId);
+    public void validateUpdated(List<ProgramaDTO> payload, String correlationId) {
+        validateAbordagemList(payload, correlationId);
     }
 
-    public void validateDeleted(ProgramaDeletedCommand command, String correlationId) {
+    public void validateDeleted(ProgramaDeletedDTO command, String correlationId) {
         requireNotNull(command, "payload programa.deleted e obrigatorio", correlationId);
         requireNotNull(command.patientId(), "patientId e obrigatorio", correlationId);
     }
 
-    private void validateAbordagemList(List<NucleoAbordagemCommand> nucleoAbordagens, String correlationId) {
+    private void validateAbordagemList(List<ProgramaDTO> nucleoAbordagens, String correlationId) {
         requireNotEmpty(nucleoAbordagens, "nucleoAbordagens e obrigatorio", correlationId);
 
         for (int i = 0; i < nucleoAbordagens.size(); i++) {
-            NucleoAbordagemCommand nucleoAbordagem = nucleoAbordagens.get(i);
+            ProgramaDTO nucleoAbordagem = nucleoAbordagens.get(i);
             requireNotNull(nucleoAbordagem, "nucleoAbordagens[" + i + "] e obrigatorio", correlationId);
             requireNotNull(nucleoAbordagem.nucleoPatientId(),
                     "nucleoAbordagens[" + i + "].nucleoPatientId e obrigatorio",

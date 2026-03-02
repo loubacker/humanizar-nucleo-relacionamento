@@ -15,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.mapper.InboundEnvelopeMapper;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.QueueCatalog;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.InboundEnvelope;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.ProcessingResultPublisher;
 import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
@@ -55,7 +54,7 @@ public class DeadLetterConsumer {
             InboundEnvelopeDTO<Object> envelopeDto = objectMapper.readValue(
                     message.getBody(), new TypeReference<>() {
                     });
-            InboundEnvelope<Object> envelope = inboundEnvelopeMapper.toCommandEnvelope(envelopeDto);
+            InboundEnvelopeDTO<Object> envelope = inboundEnvelopeMapper.toInboundEnvelope(envelopeDto);
 
             if (originalRoutingKey != null) {
                 EventOutcome rejection = EventOutcome.failed(

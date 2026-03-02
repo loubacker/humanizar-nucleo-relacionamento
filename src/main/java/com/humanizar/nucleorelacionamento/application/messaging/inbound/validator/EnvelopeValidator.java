@@ -2,14 +2,14 @@ package com.humanizar.nucleorelacionamento.application.messaging.inbound.validat
 
 import org.springframework.stereotype.Component;
 
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.InboundEnvelope;
+import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
 
 @Component
 public class EnvelopeValidator {
 
-    public void validate(InboundEnvelope<?> envelope) {
+    public void validate(InboundEnvelopeDTO<?> envelope) {
         requireNotNull(envelope, "envelope é obrigatorio", null);
         String correlationId = getCorrelationId(envelope);
 
@@ -25,7 +25,7 @@ public class EnvelopeValidator {
         requireNotNull(envelope.payload(), "payload é obrigatorio", correlationId);
     }
 
-    private String getCorrelationId(InboundEnvelope<?> envelope) {
+    private String getCorrelationId(InboundEnvelopeDTO<?> envelope) {
         return envelope.correlationId() != null ? envelope.correlationId().toString() : null;
     }
 

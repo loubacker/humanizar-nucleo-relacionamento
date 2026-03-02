@@ -5,34 +5,20 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDeletedDTO;
-import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaItemDTO;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.nucleo.NucleoAbordagemCommand;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.programa.ProgramaCreatedCommand;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.programa.ProgramaDeletedCommand;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.command.programa.ProgramaUpdatedCommand;
+import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDTO;
 
 @Component
 public class ProgramaInboundMapper {
 
-    public ProgramaCreatedCommand toCreatedCommand(List<ProgramaItemDTO> programaItems) {
-        return new ProgramaCreatedCommand(toNucleoAbordagemCommands(programaItems));
+    public List<ProgramaDTO> toCreatedPayload(List<ProgramaDTO> programaItems) {
+        return programaItems;
     }
 
-    public ProgramaUpdatedCommand toUpdatedCommand(List<ProgramaItemDTO> programaItems) {
-        return new ProgramaUpdatedCommand(toNucleoAbordagemCommands(programaItems));
+    public List<ProgramaDTO> toUpdatedPayload(List<ProgramaDTO> programaItems) {
+        return programaItems;
     }
 
-    public ProgramaDeletedCommand toDeletedCommand(ProgramaDeletedDTO programaDeletedDTO) {
-        return new ProgramaDeletedCommand(programaDeletedDTO.patientId());
-    }
-
-    private List<NucleoAbordagemCommand> toNucleoAbordagemCommands(List<ProgramaItemDTO> programaItems) {
-        if (programaItems == null) {
-            return null;
-        }
-        return programaItems.stream()
-                .map(programaItem -> new NucleoAbordagemCommand(programaItem.nucleoPatientId(),
-                        programaItem.abordagemId()))
-                .toList();
+    public ProgramaDeletedDTO toDeletedPayload(ProgramaDeletedDTO programaDeletedDTO) {
+        return programaDeletedDTO;
     }
 }
