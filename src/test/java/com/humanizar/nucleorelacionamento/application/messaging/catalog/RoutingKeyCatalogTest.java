@@ -7,9 +7,9 @@ class RoutingKeyCatalogTest {
 
     @Test
     void shouldExposeExpectedProgramaRoutingKeyLiterals() {
-        Assertions.assertEquals("ev.programa.created.v1", RoutingKeyCatalog.PROGRAMA_CREATED_V1);
-        Assertions.assertEquals("ev.programa.updated.v1", RoutingKeyCatalog.PROGRAMA_UPDATED_V1);
-        Assertions.assertEquals("ev.programa.deleted.v1", RoutingKeyCatalog.PROGRAMA_DELETED_V1);
+        Assertions.assertEquals("cmd.programa.created.v1", RoutingKeyCatalog.PROGRAMA_CREATED_V1);
+        Assertions.assertEquals("cmd.programa.updated.v1", RoutingKeyCatalog.PROGRAMA_UPDATED_V1);
+        Assertions.assertEquals("cmd.programa.deleted.v1", RoutingKeyCatalog.PROGRAMA_DELETED_V1);
     }
 
     @Test

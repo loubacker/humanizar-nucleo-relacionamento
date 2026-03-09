@@ -8,6 +8,7 @@ import com.humanizar.nucleorelacionamento.application.dto.acolhimento.Acolhiment
 import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoUpdatedDTO;
 import com.humanizar.nucleorelacionamento.application.mapper.AcolhimentoInboundMapper;
 import com.humanizar.nucleorelacionamento.application.mapper.InboundEnvelopeMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.ConsumerCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.QueueCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
@@ -34,7 +35,6 @@ import java.io.IOException;
 public class AcolhimentoConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(AcolhimentoConsumer.class);
-    private static final String CONSUMER_NAME = "acolhimento-consumer";
 
     private final ObjectMapper objectMapper;
     private final EnvelopeValidator envelopeValidator;
@@ -86,7 +86,8 @@ public class AcolhimentoConsumer {
                     ? envelope.correlationId().toString()
                     : null;
 
-            processedEventGuard.ensureNotProcessed(CONSUMER_NAME, envelope.eventId(), correlationId);
+            processedEventGuard.ensureNotProcessed(ConsumerCatalog.ACOLHIMENTO_CONSUMER, envelope.eventId(),
+                    correlationId);
 
             EventOutcome outcome = dispatchByRoutingKey(routingKey, body, envelope);
             publishProcessingResult(routingKey, envelope, outcome);
@@ -139,7 +140,7 @@ public class AcolhimentoConsumer {
                 AcolhimentoCreatedDTO createdPayload = acolhimentoInboundMapper
                         .toCreatedPayload(createdEnvelopeDto.payload());
                 yield processAcolhimentoCreatedUseCase.execute(
-                        CONSUMER_NAME, routingKey, envelope, createdPayload);
+                        ConsumerCatalog.ACOLHIMENTO_CONSUMER, routingKey, envelope, createdPayload);
             }
             case RoutingKeyCatalog.ACOLHIMENTO_UPDATED_V1 -> {
                 InboundEnvelopeDTO<AcolhimentoUpdatedDTO> updatedEnvelopeDto = parseEnvelope(body,
@@ -148,7 +149,7 @@ public class AcolhimentoConsumer {
                 AcolhimentoUpdatedDTO updatedPayload = acolhimentoInboundMapper
                         .toUpdatedPayload(updatedEnvelopeDto.payload());
                 yield processAcolhimentoUpdatedUseCase.execute(
-                        CONSUMER_NAME, routingKey, envelope, updatedPayload);
+                        ConsumerCatalog.ACOLHIMENTO_CONSUMER, routingKey, envelope, updatedPayload);
             }
             case RoutingKeyCatalog.ACOLHIMENTO_DELETED_V1 -> {
                 InboundEnvelopeDTO<AcolhimentoDeletedDTO> deletedEnvelopeDto = parseEnvelope(body,
@@ -157,7 +158,7 @@ public class AcolhimentoConsumer {
                 AcolhimentoDeletedDTO deletedPayload = acolhimentoInboundMapper
                         .toDeletedPayload(deletedEnvelopeDto.payload());
                 yield processAcolhimentoDeletedUseCase.execute(
-                        CONSUMER_NAME, routingKey, envelope, deletedPayload);
+                        ConsumerCatalog.ACOLHIMENTO_CONSUMER, routingKey, envelope, deletedPayload);
             }
             default -> {
                 log.warn("Routing key nao suportada: {}", routingKey);

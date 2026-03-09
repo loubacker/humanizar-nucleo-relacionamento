@@ -4,8 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.test.context.support.TestPropertySourceUtils;
+
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.ExchangeCatalog;
+import com.humanizar.nucleorelacionamento.infrastructure.config.rabbit.binding.RabbitAcolhimentoBindingConfig;
+import com.humanizar.nucleorelacionamento.infrastructure.config.rabbit.binding.RabbitProgramaBindingConfig;
 
 class RabbitTopologySplitConfigTest {
 
@@ -15,12 +20,24 @@ class RabbitTopologySplitConfigTest {
             TestPropertySourceUtils.addInlinedPropertiesToEnvironment(
                     context, "app.messaging.inbound.delivery-limit=3");
 
-            context.register(RabbitExchangeConfig.class, RabbitQueueConfig.class, RabbitBindingConfig.class);
+            context.register(
+                    RabbitExchangeConfig.class,
+                    RabbitQueueConfig.class,
+                    RabbitAcolhimentoBindingConfig.class,
+                    RabbitProgramaBindingConfig.class);
             context.refresh();
 
             assertThat(context.containsBean("acolhimentoExchange")).isTrue();
             assertThat(context.containsBean("programaExchange")).isTrue();
             assertThat(context.containsBean("nucleoRelacionamentoExchange")).isTrue();
+
+            TopicExchange acolhimentoExchange = context.getBean("acolhimentoExchange", TopicExchange.class);
+            TopicExchange programaExchange = context.getBean("programaExchange", TopicExchange.class);
+            TopicExchange nucleoRelacionamentoExchange = context.getBean("nucleoRelacionamentoExchange",
+                    TopicExchange.class);
+            assertThat(acolhimentoExchange.getName()).isEqualTo(ExchangeCatalog.ACOLHIMENTO_COMMAND);
+            assertThat(programaExchange.getName()).isEqualTo(ExchangeCatalog.PROGRAMA_COMMAND);
+            assertThat(nucleoRelacionamentoExchange.getName()).isEqualTo(ExchangeCatalog.NUCLEO_RELACIONAMENTO_EVENT);
 
             assertThat(context.containsBean("nucleoRelacionamentoAcolhimentoDlq")).isTrue();
             assertThat(context.containsBean("nucleoRelacionamentoAcolhimentoQueue")).isTrue();

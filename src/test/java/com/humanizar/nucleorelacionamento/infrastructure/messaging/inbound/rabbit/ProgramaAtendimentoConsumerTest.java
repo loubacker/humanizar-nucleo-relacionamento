@@ -218,7 +218,7 @@ class ProgramaAtendimentoConsumerTest {
                                 UUID.randomUUID(),
                                 UUID.randomUUID(),
                                 "humanizar-programa",
-                                "humanizar.programa.event",
+                                "humanizar.programa.command",
                                 routingKey,
                                 "programa",
                                 UUID.randomUUID(),

@@ -3,14 +3,14 @@ package com.humanizar.nucleorelacionamento.application.messaging.catalog;
 public final class RoutingKeyCatalog {
 
     // Inbound — acolhimento
-    public static final String ACOLHIMENTO_CREATED_V1 = "ev.acolhimento.created.v1";
-    public static final String ACOLHIMENTO_UPDATED_V1 = "ev.acolhimento.updated.v1";
-    public static final String ACOLHIMENTO_DELETED_V1 = "ev.acolhimento.deleted.v1";
+    public static final String ACOLHIMENTO_CREATED_V1 = "cmd.acolhimento.created.v1";
+    public static final String ACOLHIMENTO_UPDATED_V1 = "cmd.acolhimento.updated.v1";
+    public static final String ACOLHIMENTO_DELETED_V1 = "cmd.acolhimento.deleted.v1";
 
     // Inbound — programa
-    public static final String PROGRAMA_CREATED_V1 = "ev.programa.created.v1";
-    public static final String PROGRAMA_UPDATED_V1 = "ev.programa.updated.v1";
-    public static final String PROGRAMA_DELETED_V1 = "ev.programa.deleted.v1";
+    public static final String PROGRAMA_CREATED_V1 = "cmd.programa.created.v1";
+    public static final String PROGRAMA_UPDATED_V1 = "cmd.programa.updated.v1";
+    public static final String PROGRAMA_DELETED_V1 = "cmd.programa.deleted.v1";
 
     // Outbound — nucleo-relacionamento
     public static final String RESPONSAVEL_VINCULADO_V1 = "ev.nucleo.responsavel.vinculado.v1";

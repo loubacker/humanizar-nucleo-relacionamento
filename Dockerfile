@@ -1,32 +1,38 @@
-# -- Stage de Build --
-FROM maven:3.9.12-eclipse-temurin-25-alpine AS build
+# -- Stage de Build (GraalVM Java 25) --
+FROM ghcr.io/graalvm/native-image-community:25 AS builder
 
 WORKDIR /app
 
-#-- Baixa dependências antecipadamente para otimizar cache --
+# Copia Arquivos Necessários para o Build
+COPY mvnw .
+COPY .mvn/ .mvn/
 COPY pom.xml .
-RUN mvn -B -DskipTests dependency:go-offline
 
-# -- Copia o código-fonte e compila o aplicativo --
-COPY src src
-RUN mvn -B -DskipTests package
+# Permissão de execução no Wrapper mvnw
+RUN chmod +x mvnw
 
-# -- Stage de Execução (Runtime) --
-FROM eclipse-temurin:25-jre-alpine
+# Baixa Dependências no Modo Nativo
+RUN ./mvnw -Pnative -DskipTests dependency:go-offline
 
-# -- Instala libgcc e cria usuário não-root --
-RUN apk add --no-cache libgcc gcompat && addgroup -g 1001 -S appgroup && adduser -u 1001 -S appuser -G appgroup
+# Copia o Código-Fonte para o Container
+COPY src ./src
+
+# Compila a Aplicação para um Binário Nativo
+RUN ./mvnw -Pnative -DskipTests native:compile
+
+# -- Stage Runtime (Debian Slim) --
+FROM debian:bookworm-slim
 
 WORKDIR /app
 
-# -- Copia o JAR compilado do stage de build com permissão de acesso ao usuário não-root --
-COPY --from=build --chown=appuser:appgroup /app/target/humanizar-nucleo-relacionamento-0.0.1-SNAPSHOT.jar app.jar
+# Cria um user non-root
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
 
-# -- Configura variáveis de ambiente para otimização de memória e desempenho --
-ENV MALLOC_ARENA_MAX=2
-ENV JAVA_TOOL_OPTIONS="-Xmx256m -Xss256k -XX:+UseSerialGC -XX:ReservedCodeCacheSize=64m -XX:MaxMetaspaceSize=128m -XX:+ExitOnOutOfMemoryError -Dsun.net.inetaddr.ttl=30 -Dsun.net.inetaddr.negative.ttl=2"
+# Copia o Binário Nativo do Stage Build para o Stage Runtime
+COPY --from=builder --chown=appuser:appgroup /app/target/humanizar-nucleo-relacionamento /app/app-binario
 
 EXPOSE 9001
-
 USER appuser
-ENTRYPOINT ["java","-jar","app.jar"]
+
+# Ponto de Entrada no Docker, Executa o Binário Nativo com Configurações de TTL para DNS
+ENTRYPOINT ["/app/app-binario", "-Dsun.net.inetaddr.ttl=30", "-Dsun.net.inetaddr.negative.ttl=2"]

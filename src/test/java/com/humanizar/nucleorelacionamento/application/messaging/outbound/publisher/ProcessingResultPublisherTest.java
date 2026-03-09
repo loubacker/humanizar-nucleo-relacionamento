@@ -83,7 +83,7 @@ class ProcessingResultPublisherTest {
                 eventId,
                 correlationId,
                 "humanizar-acolhimento",
-                "humanizar.acolhimento.event",
+                "humanizar.acolhimento.command",
                 routingKey,
                 aggregateType,
                 aggregateId,

@@ -1,5 +1,6 @@
 HELP.md
 target/
+graal-agent-config/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
@@ -32,7 +33,6 @@ build/
 ### Pastas ###
 .vscode/
 .idea/
-.claude/
 .docs/
 
 ### Env ###

@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoDeletedDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.ConsumerCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.MessageErrorHandler;
@@ -52,7 +53,7 @@ class ProcessAcolhimentoDeletedUseCaseTest {
                                 eventId,
                                 correlationId,
                                 "humanizar-acolhimento",
-                                "humanizar.acolhimento.event",
+                                "humanizar.acolhimento.command",
                                 RoutingKeyCatalog.ACOLHIMENTO_DELETED_V1,
                                 "acolhimento",
                                 aggregateId,
@@ -77,7 +78,7 @@ class ProcessAcolhimentoDeletedUseCaseTest {
                                 });
 
                 EventOutcome outcome = useCase.execute(
-                                "acolhimento-consumer",
+                                ConsumerCatalog.ACOLHIMENTO_CONSUMER,
                                 RoutingKeyCatalog.ACOLHIMENTO_DELETED_V1,
                                 envelope,
                                 command);

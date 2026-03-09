@@ -21,6 +21,7 @@ import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.dto.NucleoPatientDTO;
 import com.humanizar.nucleorelacionamento.application.dto.ResponsavelDTO;
 import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoCreatedDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.ConsumerCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.validator.AcolhimentoPayloadValidator;
@@ -55,7 +56,7 @@ class ProcessAcolhimentoCreatedUseCaseTest {
                                 eventId,
                                 correlationId,
                                 "humanizar-acolhimento",
-                                "humanizar.acolhimento.event",
+                                "humanizar.acolhimento.command",
                                 RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1,
                                 "acolhimento",
                                 aggregateId,
@@ -85,7 +86,7 @@ class ProcessAcolhimentoCreatedUseCaseTest {
                                 });
 
                 EventOutcome outcome = useCase.execute(
-                                "acolhimento-consumer",
+                                ConsumerCatalog.ACOLHIMENTO_CONSUMER,
                                 RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1,
                                 envelope,
                                 command);

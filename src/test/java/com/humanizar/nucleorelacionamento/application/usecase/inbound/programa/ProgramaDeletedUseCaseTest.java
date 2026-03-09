@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDeletedDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.ConsumerCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.MessageErrorHandler;
@@ -52,7 +53,7 @@ class ProgramaDeletedUseCaseTest {
                 eventId,
                 correlationId,
                 "humanizar-programa",
-                "humanizar.programa.event",
+                "humanizar.programa.command",
                 RoutingKeyCatalog.PROGRAMA_DELETED_V1,
                 "programa",
                 aggregateId,
@@ -75,7 +76,7 @@ class ProgramaDeletedUseCaseTest {
                 });
 
         EventOutcome outcome = useCase.execute(
-                "programa-atendimento-consumer",
+                ConsumerCatalog.PROGRAMA_CONSUMER,
                 RoutingKeyCatalog.PROGRAMA_DELETED_V1,
                 envelope,
                 command);

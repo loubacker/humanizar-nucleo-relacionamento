@@ -11,12 +11,12 @@ public class RabbitExchangeConfig {
 
     @Bean
     public TopicExchange acolhimentoExchange() {
-        return new TopicExchange(ExchangeCatalog.ACOLHIMENTO_EVENT, true, false);
+        return new TopicExchange(ExchangeCatalog.ACOLHIMENTO_COMMAND, true, false);
     }
 
     @Bean
     public TopicExchange programaExchange() {
-        return new TopicExchange(ExchangeCatalog.PROGRAMA_EVENT, true, false);
+        return new TopicExchange(ExchangeCatalog.PROGRAMA_COMMAND, true, false);
     }
 
     @Bean

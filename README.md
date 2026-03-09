@@ -3,7 +3,8 @@
   <p>Gestão do Relacionamento entre Núcleo e Paciente dentro do ecossistema Humanizar.</p>
 
   <img alt="Java" src="https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" />
-  <img alt="Spring Boot" src="https://img.shields.io/badge/Spring_Boot-4.0.2-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" />
+  <img alt="Spring Boot" src="https://img.shields.io/badge/Spring_Boot-4.0.3-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" />
+  <img alt="GraalVM" src="https://img.shields.io/badge/GraalVM_Native-25-E76F00?style=for-the-badge&logo=oracle&logoColor=white" />
   <img alt="RabbitMQ" src="https://img.shields.io/badge/RabbitMQ-%23FF6600.svg?style=for-the-badge&logo=rabbitmq&logoColor=white" />
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" />
   <img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
@@ -21,6 +22,7 @@ O projeto foi construído focando em alta escalabilidade, resiliência e isolame
 - **Transactional Outbox Pattern:** Para garantir a entrega de mensagens ao RabbitMQ sem risco de dupla escrita ou perda de dados, os eventos de saída são salvos na mesma transação de banco (`outbox_event`) e despachados assincronamente por um Relay Worker (`OutboxRelayWorker`).
 - **Idempotência:** Todo evento de entrada possui um mecanismo de guarda (`ProcessedEventGuard`) que registra eventos processados na tabela `processed_event`. Eventos duplicados são ignorados automaticamente.
 - **Virtual Threads:** Otimização de concorrência e I/O bloqueante habilitada ativamente no Spring Boot (`VirtualThreadsConfig`), utilizando o poder do Project Loom do Java 25 para consumo massivo de filas.
+- **GraalVM Native Image:** A aplicação é compilada AOT (Ahead-of-Time) em um binário nativo autônomo, eliminando a JVM do runtime para startup instantâneo e footprint de memória mínimo.
 
 ## Contexto de Negócio e Domínio
 
@@ -38,15 +40,15 @@ A aplicação atua como um **Worker Service**, sendo reativa a eventos externos 
 
 A aplicação escuta filas para sincronizar o relacionamento quando ações acontecem nos microserviços de Acolhimento e Programa:
 
-**Exchange: `humanizar.acolhimento.event`**
-- `ev.acolhimento.created.v1`
-- `ev.acolhimento.updated.v1`
-- `ev.acolhimento.deleted.v1`
+**Exchange: `humanizar.acolhimento.command`**
+- `cmd.acolhimento.created.v1`
+- `cmd.acolhimento.updated.v1`
+- `cmd.acolhimento.deleted.v1`
 
-**Exchange: `humanizar.programa.event`**
-- `ev.programa.created.v1`
-- `ev.programa.updated.v1`
-- `ev.programa.deleted.v1`
+**Exchange: `humanizar.programa.command`**
+- `cmd.programa.created.v1`
+- `cmd.programa.updated.v1`
+- `cmd.programa.deleted.v1`
 
 ### Produz (Outbound - Via Outbox)
 
@@ -83,7 +85,7 @@ Mesmo sem rotas HTTP públicas para clientes, as proteções e configurações S
 
 ### Pré-requisitos
 - JDK 25
-- Docker e Docker Compose (para banco de dados, mensageria e Redis)
+- Docker e Docker Compose (para banco de dados e mensageria)
 - Maven 3.9+
 
 ### Configuração de Variáveis de Ambiente
@@ -98,7 +100,7 @@ AUTH_SERVER_URL=http://localhost:8080
 ```
 
 ### Executando a Aplicação
-Suba os serviços dependentes (PostgreSQL, RabbitMQ, Redis) utilizando um `docker-compose.yml`. Em seguida, instale as dependências e rode via Maven Wrapper:
+Suba os serviços dependentes (PostgreSQL e RabbitMQ) utilizando um `docker-compose.yml`. Em seguida, instale as dependências e rode via Maven Wrapper:
 
 ```bash
 ./mvnw clean install -DskipTests
@@ -117,7 +119,8 @@ O sistema possui schedulers essenciais rodando em background (`@EnableScheduling
 
 ## 🐳 Docker
 
-A aplicação conta com um Dockerfile otimizado em Multi-Stage Build (Alpine Linux) utilizando `eclipse-temurin:25-jre-alpine`. Decisões arquiteturais tomadas para orquestração (Kubernetes/ECS):
+A aplicação conta com um Dockerfile otimizado em Multi-Stage Build utilizando **GraalVM Native Image**. O stage de build compila a aplicação em um binário nativo autônomo (`native:compile`), e o stage de runtime utiliza `debian:bookworm-slim` — sem JRE, sem JVM. Decisões arquiteturais tomadas para orquestração (Kubernetes/ECS):
 
+- **Binário Nativo (AOT):** Startup em milissegundos e consumo de memória drasticamente reduzido em comparação com execução via JVM.
 - Usuário `appuser` sem privilégios de root (Security First).
-- Variáveis de ambiente OOTB (Out of The Box): `MALLOC_ARENA_MAX=2` para reduzir fragmentação de memória, além de travas no GC (`-XX:+UseSerialGC`) e Metaspace para focar o processamento nas Virtual Threads através do `JAVA_TOOL_OPTIONS`.
+- Flags de TTL DNS (`-Dsun.net.inetaddr.ttl=30`, `-Dsun.net.inetaddr.negative.ttl=2`) aplicadas diretamente no entrypoint do binário.

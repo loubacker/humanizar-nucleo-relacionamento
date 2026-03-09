@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.0.2</version>
+		<version>4.0.3</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.humanizar</groupId>
@@ -29,8 +29,7 @@
 
 	<properties>
         <java.version>25</java.version>
-		<spring-cloud.version>2025.1.0</spring-cloud.version>
-        <spring-boot.version>4.0.2</spring-boot.version>
+		<spring-cloud.version>2025.1.1</spring-cloud.version>
 	</properties>
 
 	<!-- Dependencias de Spring Cloud -->
@@ -99,12 +98,6 @@
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
 
-		<!-- Dependência Spring Boot HikariCP -->
-		<dependency>
-			<groupId>com.zaxxer</groupId>
-			<artifactId>HikariCP</artifactId>
-		</dependency>
-
 		<!-- Dependência Spring Boot RabbitMQ -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -121,10 +114,17 @@
 
 	<build>
 		<plugins>
+			<!-- Plugin para empacotamento do Spring Boot -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
+
+			<!-- Plugin para compilação nativa com GraalVM -->
+			<plugin>
+				<groupId>org.graalvm.buildtools</groupId>
+				<artifactId>native-maven-plugin</artifactId>
+        	</plugin>
 		</plugins>
 	</build>
 

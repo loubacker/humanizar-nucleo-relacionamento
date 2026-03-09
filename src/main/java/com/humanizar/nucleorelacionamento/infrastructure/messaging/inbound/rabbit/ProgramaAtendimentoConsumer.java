@@ -7,6 +7,7 @@ import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDelet
 import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDTO;
 import com.humanizar.nucleorelacionamento.application.mapper.InboundEnvelopeMapper;
 import com.humanizar.nucleorelacionamento.application.mapper.ProgramaInboundMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.ConsumerCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.QueueCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
@@ -34,7 +35,6 @@ import java.util.List;
 public class ProgramaAtendimentoConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(ProgramaAtendimentoConsumer.class);
-    private static final String CONSUMER_NAME = "programa-atendimento-consumer";
 
     private final ObjectMapper objectMapper;
     private final EnvelopeValidator envelopeValidator;
@@ -86,7 +86,8 @@ public class ProgramaAtendimentoConsumer {
                     ? envelope.correlationId().toString()
                     : null;
 
-            processedEventGuard.ensureNotProcessed(CONSUMER_NAME, envelope.eventId(), correlationId);
+            processedEventGuard.ensureNotProcessed(ConsumerCatalog.PROGRAMA_CONSUMER, envelope.eventId(),
+                    correlationId);
 
             EventOutcome outcome = dispatchByRoutingKey(routingKey, body, envelope);
             publishProcessingResult(routingKey, envelope, outcome);
@@ -139,7 +140,7 @@ public class ProgramaAtendimentoConsumer {
                 List<ProgramaDTO> createdPayload = programaInboundMapper
                         .toCreatedPayload(createdEnvelopeDto.payload());
                 yield programaCreatedUseCase.execute(
-                        CONSUMER_NAME,
+                        ConsumerCatalog.PROGRAMA_CONSUMER,
                         routingKey,
                         envelope,
                         createdPayload);
@@ -151,7 +152,7 @@ public class ProgramaAtendimentoConsumer {
                 List<ProgramaDTO> updatedPayload = programaInboundMapper
                         .toUpdatedPayload(updatedEnvelopeDto.payload());
                 yield programaUpdatedUseCase.execute(
-                        CONSUMER_NAME,
+                        ConsumerCatalog.PROGRAMA_CONSUMER,
                         routingKey,
                         envelope,
                         updatedPayload);
@@ -163,7 +164,7 @@ public class ProgramaAtendimentoConsumer {
                 ProgramaDeletedDTO deletedPayload = programaInboundMapper
                         .toDeletedPayload(deletedEnvelopeDto.payload());
                 yield programaDeletedUseCase.execute(
-                        CONSUMER_NAME,
+                        ConsumerCatalog.PROGRAMA_CONSUMER,
                         routingKey,
                         envelope,
                         deletedPayload);
