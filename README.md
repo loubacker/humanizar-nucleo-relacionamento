@@ -108,7 +108,7 @@ Transações de status:
 - Remove outbox antigo (`PUBLISHED` e `DEAD`) com mais de 48h.
 - Remove `processed_event` antigo com mais de 90 dias.
 
-## Estrutura do projeto
+## Estrutura do Projeto
 
 ```text
 src/main/java/com/humanizar/nucleorelacionamento/
@@ -123,14 +123,13 @@ src/main/java/com/humanizar/nucleorelacionamento/
 
 ## Como executar localmente
 
-### Pre-requisitos
+### Pré-requisitos
 - JDK 25
 - Maven 3.9+
-- PostgreSQL e RabbitMQ (ex.: Docker Compose)
+- PostgreSQL
+- RabbitMQ
 
-### Variaveis de ambiente
-
-Crie `.env` na raiz do modulo:
+### Variáveis de Ambiente (`.env`)
 
 ```env
 DB_URL=jdbc:postgresql://localhost:5432/db
@@ -140,7 +139,7 @@ RABBITMQ_URL=amqp://guest:guest@localhost:5672
 AUTH_SERVER_URL=http://localhost:8080
 ```
 
-### Execucao Local (JVM)
+### Execução local (JVM)
 
 ```bash
 ./mvnw clean install -DskipTests
@@ -152,7 +151,7 @@ Health check: `http://localhost:9001/actuator/health`.
 
 ## 🐳 Docker Native (GraalVM)
 
-O Dockerfile do modulo usa build multi-stage com GraalVM Native Image:
+O Dockerfile do módulo usa build multi-stage com GraalVM Native Image:
 
 1. Build stage (`ghcr.io/graalvm/native-image-community:25`) compila com:
    - `./mvnw -Pnative -DskipTests native:compile`
