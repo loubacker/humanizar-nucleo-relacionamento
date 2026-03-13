@@ -1,29 +1,31 @@
 ﻿<div align="center">
-  <h1>Humanizar - Nucleo Relacionamento (Microservice)</h1>
-  <p>Gestao do relacionamento entre Nucleo e Paciente no ecossistema Humanizar.</p>
+  <h1>Humanizar - Núcleo de Relacionamento (Microservice)</h1>
+  <p>Gestão do relacionamento entre Núcleo e Paciente no ecossistema Humanizar.</p>
 
   <img alt="Java" src="https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" />
   <img alt="Spring Boot" src="https://img.shields.io/badge/Spring_Boot-4.0.3-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" />
+  <img alt="GraalVM" src="https://img.shields.io/badge/GraalVM_Native-25-E76F00?style=for-the-badge&logo=oracle&logoColor=white" />
   <img alt="RabbitMQ" src="https://img.shields.io/badge/RabbitMQ-%23FF6600.svg?style=for-the-badge&logo=rabbitmq&logoColor=white" />
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" />
 </div>
 
 <br/>
 
-Servico EDA (sem endpoint REST de negocio) responsavel por sincronizar vinculos de nucleos, responsaveis e abordagens a partir de eventos inbound, com idempotencia, outbox transacional e callbacks de processamento.
+Serviço EDA (sem endpoint REST de negócio), responsável por sincronizar vínculos de núcleos, responsáveis e abordagens a partir de eventos inbound, com idempotência, outbox transacional e callbacks de processamento.
 
-## Arquitetura e padroes
+## Arquitetura e Padrões
 
-- Hexagonal architecture (`application`, `domain`, `infrastructure`).
-- Inbound segregado por routing key (handlers dedicados por operacao).
-- Validacao de envelope/payload em mappers inbound por dominio/operacao.
-- Outbox transacional para publicacao assincrona confiavel.
-- Idempotencia via `processed_event` antes do processamento de regra.
-- ACK/NACK manual do RabbitMQ com politica explicita por tipo de erro.
+- Arquitetura Hexagonal (`application`, `domain`, `infrastructure`).
+- Inbound segregado por routing key (handlers dedicados por operação).
+- Validação de envelope/payload em mappers inbound por domínio/operação.
+- Outbox transacional para publicação assíncrona confiável.
+- Idempotência via `processed_event` antes do processamento da regra.
+- `ACK/NACK` manual do RabbitMQ com política explícita por tipo de erro.
+- Runtime opcional em binário nativo com GraalVM Native Image.
 
-## Comunicacao assincrona (RabbitMQ)
+## 🔄 Comunicação Assíncrona (RabbitMQ)
 
-### Inbound (consome)
+## Inbound
 
 **Exchange `humanizar.acolhimento.command`**
 - `cmd.acolhimento.created.v1`
@@ -35,11 +37,11 @@ Servico EDA (sem endpoint REST de negocio) responsavel por sincronizar vinculos 
 - `cmd.programa.updated.v1`
 - `cmd.programa.deleted.v1`
 
-### Outbound (produz via outbox)
+## Outbound
 
-O outbound esta separada em 2 trilhas:
+O outbound está separado em duas trilhas:
 
-1. **Eventos de dominio downstream**
+1. **Eventos de domínio downstream**
 
 **Exchange `humanizar.nucleo-relacionamento.event`**
 - `ev.nucleo.responsavel.vinculado.v1`
@@ -59,63 +61,18 @@ Contrato publicado: `OutboundEnvelopeDTO<T>` (metadados + payload).
 
 Contrato publicado: `CallbackDTO`.
 
-## Contratos de payload outbound
-
-### 1) Dominio Downstream (`humanizar.nucleo-relacionamento.event`)
-
-```json
-{
-  "eventId": "uuid",
-  "correlationId": "uuid",
-  "producerService": "humanizar-nucleo-relacionamento",
-  "occurredAt": "2026-03-13T02:00:00",
-  "actorId": "uuid",
-  "userAgent": "Mozilla/5.0 ...",
-  "originIp": "127.0.0.1",
-  "payload": {
-    "patientId": "uuid",
-    "nucleoPatient": []
-  }
-}
-```
-
-### 2) Callback Upstream (`humanizar.acolhimento.event` / `humanizar.programa.event`)
-
-```json
-{
-  "upStream": "cmd.acolhimento.created.v1",
-  "eventId": "uuid",
-  "correlationId": "uuid",
-  "producerService": "humanizar-nucleo-relacionamento",
-  "exchangeName": "humanizar.acolhimento.event",
-  "routingKey": "ev.acolhimento.nucleo-relacionamento.processed.v1",
-  "aggregateType": "acolhimento",
-  "aggregateId": "uuid",
-  "eventVersion": 1,
-  "occurredAt": "2026-03-13T02:00:00",
-  "actorId": "uuid",
-  "userAgent": "Mozilla/5.0 ...",
-  "originIp": "127.0.0.1",
-  "status": "PROCESSED",
-  "reasonCode": null,
-  "errorMessage": null,
-  "processedAt": "2026-03-13T02:00:00",
-  "rejectedAt": null
-}
-```
-
-## Resiliencia e tolerancia a falhas
+## ⛓️‍💥 Resiliência e tolerância a falhas
 
 ### ACK/NACK manual
 
 `rabbitListenerContainerFactory` roda com `AcknowledgeMode.MANUAL`.
 
 Política de consumo:
-- `ack`: sucesso, duplicado, erro funcional sem retry.
-- `nackRetry` (`requeue=true`): erro segue para retry.
-- `nackDeadLetter` (`requeue=false`): parse invalido / mensagem invalida.
+- `ack`: sucesso, duplicidade ou erro funcional sem retry.
+- `nackRetry` (`requeue=true`): o erro segue para retry.
+- `nackDeadLetter` (`requeue=false`): parse inválido / mensagem inválida.
 
-Implementacao central: `RabbitAcknowledgementConfig`.
+Implementação central: `RabbitAcknowledgementConfig`.
 
 ### DLQ
 
@@ -123,33 +80,33 @@ Filas principais:
 - `humanizar-nucleo-relacionamento.acolhimento`
 - `humanizar-nucleo-relacionamento.programa`
 
-Filas de dead-letter:
+Filas de dead letter:
 - `humanizar-nucleo-relacionamento.acolhimento.dlq`
 - `humanizar-nucleo-relacionamento.programa.dlq`
 
-### Idempotencia
+### Idempotência
 
-Antes do processamento de regra, o consumer valida duplicidade via `ProcessedEventGuard`.
+Antes do processamento da regra, o consumer valida duplicidade por meio do `ProcessedEventGuard`.
 
-## Workers em background
+## 🛠️ Workers em Background
 
 ### OutboxRelayWorker (5s)
 
 - Faz claim de eventos em `NEW`, `FAILED` e `LOCKED`.
 - Aplica lock ownership por `instanceId` (fencing).
-- Publica assincronamente com controle de paralelismo.
+- Publica de forma assíncrona com controle de paralelismo.
 
 ### OutboxEventProcessor
 
-Transicoes de status:
+Transações de status:
 - sucesso: `LOCKED -> PUBLISHED`
-- falha retentavel: `LOCKED -> FAILED` (com `nextRetryAt`)
+- falha com retry: `LOCKED -> FAILED` (com `nextRetryAt`)
 - tentativas esgotadas: `LOCKED -> DEAD`
 
 ### RetentionWorker (1h)
 
-- Remove outbox antigo (`PUBLISHED` e `DEAD`) > 48h.
-- Remove `processed_event` antigo > 90 dias.
+- Remove outbox antigo (`PUBLISHED` e `DEAD`) com mais de 48h.
+- Remove `processed_event` antigo com mais de 90 dias.
 
 ## Estrutura do projeto
 
@@ -183,7 +140,7 @@ RABBITMQ_URL=amqp://guest:guest@localhost:5672
 AUTH_SERVER_URL=http://localhost:8080
 ```
 
-### Execucao
+### Execucao Local (JVM)
 
 ```bash
 ./mvnw clean install -DskipTests
@@ -192,3 +149,19 @@ AUTH_SERVER_URL=http://localhost:8080
 
 Porta padrao: `9001`.
 Health check: `http://localhost:9001/actuator/health`.
+
+## 🐳 Docker Native (GraalVM)
+
+O Dockerfile do modulo usa build multi-stage com GraalVM Native Image:
+
+1. Build stage (`ghcr.io/graalvm/native-image-community:25`) compila com:
+   - `./mvnw -Pnative -DskipTests native:compile`
+2. Runtime stage (`debian:bookworm-slim`) executa binario nativo:
+   - `/app/app-binario`
+
+Exemplo:
+
+```bash
+docker build -t humanizar-nucleo-relacionamento:native .
+docker run --rm -p 9001:9001 --env-file .env humanizar-nucleo-relacionamento:native
+```
