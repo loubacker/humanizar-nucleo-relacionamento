@@ -28,15 +28,21 @@ class RabbitTopologySplitConfigTest {
             context.refresh();
 
             assertThat(context.containsBean("acolhimentoExchange")).isTrue();
+            assertThat(context.containsBean("acolhimentoEventExchange")).isTrue();
             assertThat(context.containsBean("programaExchange")).isTrue();
+            assertThat(context.containsBean("programaEventExchange")).isTrue();
             assertThat(context.containsBean("nucleoRelacionamentoExchange")).isTrue();
 
             TopicExchange acolhimentoExchange = context.getBean("acolhimentoExchange", TopicExchange.class);
+            TopicExchange acolhimentoEventExchange = context.getBean("acolhimentoEventExchange", TopicExchange.class);
             TopicExchange programaExchange = context.getBean("programaExchange", TopicExchange.class);
+            TopicExchange programaEventExchange = context.getBean("programaEventExchange", TopicExchange.class);
             TopicExchange nucleoRelacionamentoExchange = context.getBean("nucleoRelacionamentoExchange",
                     TopicExchange.class);
             assertThat(acolhimentoExchange.getName()).isEqualTo(ExchangeCatalog.ACOLHIMENTO_COMMAND);
+            assertThat(acolhimentoEventExchange.getName()).isEqualTo(ExchangeCatalog.ACOLHIMENTO_EVENT);
             assertThat(programaExchange.getName()).isEqualTo(ExchangeCatalog.PROGRAMA_COMMAND);
+            assertThat(programaEventExchange.getName()).isEqualTo(ExchangeCatalog.PROGRAMA_EVENT);
             assertThat(nucleoRelacionamentoExchange.getName()).isEqualTo(ExchangeCatalog.NUCLEO_RELACIONAMENTO_EVENT);
 
             assertThat(context.containsBean("nucleoRelacionamentoAcolhimentoDlq")).isTrue();

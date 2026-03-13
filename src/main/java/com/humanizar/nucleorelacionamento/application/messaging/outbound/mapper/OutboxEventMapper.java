@@ -1,21 +1,22 @@
 package com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.humanizar.nucleorelacionamento.application.messaging.catalog.ExchangeCatalog;
+import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.OutboxEvent;
+import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
 import com.humanizar.nucleorelacionamento.domain.model.enums.OutboxStatus;
 
 @Component
 public class OutboxEventMapper {
 
     private static final String PRODUCER_SERVICE = "humanizar-nucleo-relacionamento";
-    private static final String AGGREGATE_TYPE = "nucleo_patient";
     private static final short EVENT_VERSION = 1;
     private static final int DEFAULT_MAX_ATTEMPTS = 5;
 
@@ -25,22 +26,8 @@ public class OutboxEventMapper {
         this.objectMapper = objectMapper;
     }
 
-    public OutboxEvent toOutboxEvent(String routingKey, UUID aggregateId,
-            UUID correlationId, Object payload,
-            UUID actorId, String userAgent, String originIp) {
-        return toOutboxEvent(
-                routingKey,
-                AGGREGATE_TYPE,
-                aggregateId,
-                null,
-                correlationId,
-                payload,
-                actorId,
-                userAgent,
-                originIp);
-    }
-
-    public OutboxEvent toOutboxEvent(String routingKey,
+    public OutboxEvent toOutboxEvent(String exchangeName,
+            String routingKey,
             String aggregateType,
             UUID aggregateId,
             UUID eventId,
@@ -49,18 +36,22 @@ public class OutboxEventMapper {
             UUID actorId,
             String userAgent,
             String originIp) {
-        String resolvedAggregateType = aggregateType != null && !aggregateType.isBlank()
-                ? aggregateType
-                : AGGREGATE_TYPE;
-        UUID resolvedEventId = eventId != null ? eventId : UUID.randomUUID();
+        String correlationAsString = correlationId != null ? correlationId.toString() : null;
+        requireText(exchangeName, "exchangeName", correlationAsString);
+        requireText(routingKey, "routingKey", correlationAsString);
+        requireText(aggregateType, "aggregateType", correlationAsString);
+        requireNonNull(aggregateId, "aggregateId", correlationAsString);
+        requireNonNull(eventId, "eventId", correlationAsString);
+        requireNonNull(correlationId, "correlationId", correlationAsString);
+        requireNonNull(payload, "payload", correlationAsString);
 
         return OutboxEvent.builder()
-                .eventId(resolvedEventId)
+                .eventId(eventId)
                 .correlationId(correlationId)
                 .producerService(PRODUCER_SERVICE)
-                .exchangeName(ExchangeCatalog.NUCLEO_RELACIONAMENTO_EVENT)
+                .exchangeName(exchangeName)
                 .routingKey(routingKey)
-                .aggregateType(resolvedAggregateType)
+                .aggregateType(aggregateType)
                 .aggregateId(aggregateId)
                 .eventVersion(EVENT_VERSION)
                 .payload(serialize(payload))
@@ -72,6 +63,24 @@ public class OutboxEventMapper {
                 .maxAttempts(DEFAULT_MAX_ATTEMPTS)
                 .nextRetryAt(LocalDateTime.now())
                 .build();
+    }
+
+    private void requireText(String value, String fieldName, String correlationId) {
+        if (value == null || value.isBlank()) {
+            throw new NucleoRelacionamentoException(
+                    ReasonCode.VALIDATION_ERROR,
+                    correlationId,
+                    "Campo obrigatorio ausente no outbox: " + fieldName);
+        }
+    }
+
+    private <T> void requireNonNull(T value, String fieldName, String correlationId) {
+        if (Objects.isNull(value)) {
+            throw new NucleoRelacionamentoException(
+                    ReasonCode.VALIDATION_ERROR,
+                    correlationId,
+                    "Campo obrigatorio ausente no outbox: " + fieldName);
+        }
     }
 
     private String serialize(Object value) {

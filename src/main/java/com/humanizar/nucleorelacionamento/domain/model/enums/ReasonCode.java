@@ -2,16 +2,21 @@ package com.humanizar.nucleorelacionamento.domain.model.enums;
 
 public enum ReasonCode {
 
-    HAS_ABORDAGEM(409, "Nao e permitido remover nucleo com abordagem vinculada.", false),
+    HAS_ABORDAGEM(409, "Não e permitido remover nucleo com abordagem vinculada.", false),
     RESPONSAVEL_REQUIRED(422, "NucleoPatient exige ao menos um responsavel.", false),
-    NUCLEO_PATIENT_NOT_FOUND(404, "NucleoPatient nao encontrado.", false),
-    ABORDAGEM_DUPLICATED(409, "Abordagem ja vinculada para este nucleoPatient.", false),
-    VALIDATION_ERROR(400, "Falha de validacao do payload/evento.", false),
+    NUCLEO_PATIENT_NOT_FOUND(404, "NucleoPatient não encontrado.", false),
+    ABORDAGEM_DUPLICATED(409, "Abordagem já vinculada para este nucleoPatient.", false),
+    VALIDATION_ERROR(400, "Falha de validação do payload/evento.", false),
+    INBOUND_REQUIRED_FIELD(400, "Campo obrigatório ausente no inbound.", false),
+    INBOUND_INVALID_ENUM(400, "Valor enum invalido no inbound.", false),
+    INBOUND_EMPTY_COLLECTION(400, "Colecao obrigatória vazia no inbound.", false),
+    INBOUND_DUPLICATE_ITEM(400, "Item duplicado encontrado no inbound.", false),
+    INBOUND_PARSE_ERROR(400, "Falha ao parsear mensagem inbound.", false),
     UNSUPPORTED_EVENT_VERSION(422, "Versao de evento nao suportada.", false),
-    UNSUPPORTED_ROUTING_KEY(400, "Routing key nao suportada.", false),
-    DUPLICATE_EVENT(409, "Evento duplicado ja processado.", false),
-    INTEGRATION_FAILURE(502, "Falha de integracao com dependencia externa.", true),
-    PERSISTENCE_FAILURE(503, "Falha de persistencia no banco de dados.", true);
+    UNSUPPORTED_ROUTING_KEY(400, "Routing key não suportada.", false),
+    DUPLICATE_EVENT(409, "Evento duplicado já processado.", false),
+    INTEGRATION_FAILURE(502, "Falha de integração com dependência externa.", true),
+    PERSISTENCE_FAILURE(503, "Falha de persistência no banco de dados.", true);
 
     private final int statusCode;
     private final String message;

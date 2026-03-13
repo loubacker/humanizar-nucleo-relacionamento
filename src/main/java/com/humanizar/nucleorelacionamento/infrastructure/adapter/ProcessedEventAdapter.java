@@ -25,7 +25,7 @@ public class ProcessedEventAdapter implements ProcessedEventPort {
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRED)
     public ProcessedEvent save(ProcessedEvent processedEvent) {
         ProcessedEventEntity entity = toEntity(processedEvent);
         ProcessedEventEntity saved = processedEventRepository.save(entity);

@@ -1,27 +1,10 @@
 package com.humanizar.nucleorelacionamento.infrastructure.messaging.inbound.rabbit;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
-import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoCreatedDTO;
-import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoDeletedDTO;
-import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoUpdatedDTO;
-import com.humanizar.nucleorelacionamento.application.mapper.AcolhimentoInboundMapper;
-import com.humanizar.nucleorelacionamento.application.mapper.InboundEnvelopeMapper;
-import com.humanizar.nucleorelacionamento.application.messaging.catalog.ConsumerCatalog;
-import com.humanizar.nucleorelacionamento.application.messaging.catalog.QueueCatalog;
-import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.validator.EnvelopeValidator;
-import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.ProcessingResultPublisher;
-import com.humanizar.nucleorelacionamento.application.usecase.inbound.acolhimento.AcolhimentoCreatedUseCase;
-import com.humanizar.nucleorelacionamento.application.usecase.inbound.acolhimento.AcolhimentoDeletedUseCase;
-import com.humanizar.nucleorelacionamento.application.usecase.inbound.acolhimento.AcolhimentoUpdatedUseCase;
-import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
-import com.humanizar.nucleorelacionamento.domain.model.enums.ProcessedResult;
-import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
-import com.humanizar.nucleorelacionamento.infrastructure.messaging.inbound.idempotency.ProcessedEventGuard;
-import com.rabbitmq.client.Channel;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,91 +12,104 @@ import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.ConsumerCatalog;
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.QueueCatalog;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.acolhimento.AcolhimentoRoutingHandler;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.mapper.EnvelopeInboundMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.ProcessingResultPublisher;
+import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
+import com.humanizar.nucleorelacionamento.domain.model.enums.ProcessedResult;
+import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
+import com.humanizar.nucleorelacionamento.infrastructure.config.rabbit.RabbitAcknowledgementConfig;
+import com.humanizar.nucleorelacionamento.infrastructure.messaging.inbound.idempotency.ProcessedEventGuard;
+import com.rabbitmq.client.Channel;
 
 @Component
 public class AcolhimentoConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(AcolhimentoConsumer.class);
 
-    private final ObjectMapper objectMapper;
-    private final EnvelopeValidator envelopeValidator;
+    private final EnvelopeInboundMapper envelopeInboundMapper;
     private final ProcessedEventGuard processedEventGuard;
     private final ProcessingResultPublisher processingResultPublisher;
-    private final InboundEnvelopeMapper inboundEnvelopeMapper;
-    private final AcolhimentoInboundMapper acolhimentoInboundMapper;
-    private final AcolhimentoCreatedUseCase processAcolhimentoCreatedUseCase;
-    private final AcolhimentoUpdatedUseCase processAcolhimentoUpdatedUseCase;
-    private final AcolhimentoDeletedUseCase processAcolhimentoDeletedUseCase;
+    private final Map<String, AcolhimentoRoutingHandler> routingHandlers;
+    private final RabbitAcknowledgementConfig rabbitAcknowledgementConfig;
 
-    public AcolhimentoConsumer(ObjectMapper objectMapper,
-            EnvelopeValidator envelopeValidator,
+    public AcolhimentoConsumer(
+            EnvelopeInboundMapper envelopeInboundMapper,
             ProcessedEventGuard processedEventGuard,
             ProcessingResultPublisher processingResultPublisher,
-            InboundEnvelopeMapper inboundEnvelopeMapper,
-            AcolhimentoInboundMapper acolhimentoInboundMapper,
-            AcolhimentoCreatedUseCase processAcolhimentoCreatedUseCase,
-            AcolhimentoUpdatedUseCase processAcolhimentoUpdatedUseCase,
-            AcolhimentoDeletedUseCase processAcolhimentoDeletedUseCase) {
-        this.objectMapper = objectMapper;
-        this.envelopeValidator = envelopeValidator;
+            List<AcolhimentoRoutingHandler> routingHandlers,
+            RabbitAcknowledgementConfig rabbitAcknowledgementConfig) {
+        this.envelopeInboundMapper = envelopeInboundMapper;
         this.processedEventGuard = processedEventGuard;
         this.processingResultPublisher = processingResultPublisher;
-        this.inboundEnvelopeMapper = inboundEnvelopeMapper;
-        this.acolhimentoInboundMapper = acolhimentoInboundMapper;
-        this.processAcolhimentoCreatedUseCase = processAcolhimentoCreatedUseCase;
-        this.processAcolhimentoUpdatedUseCase = processAcolhimentoUpdatedUseCase;
-        this.processAcolhimentoDeletedUseCase = processAcolhimentoDeletedUseCase;
+        this.routingHandlers = routingHandlers.stream()
+                .collect(Collectors.toUnmodifiableMap(AcolhimentoRoutingHandler::routingKey, Function.identity()));
+        this.rabbitAcknowledgementConfig = rabbitAcknowledgementConfig;
     }
 
     @RabbitListener(queues = QueueCatalog.NUCLEO_RELACIONAMENTO_ACOLHIMENTO, containerFactory = "rabbitListenerContainerFactory")
     public void onMessage(Message message, Channel channel) throws IOException {
         long deliveryTag = message.getMessageProperties().getDeliveryTag();
+        String queue = message.getMessageProperties().getConsumerQueue();
+        String messageId = message.getMessageProperties().getMessageId();
         InboundEnvelopeDTO<Object> envelope = null;
-        String routingKey = null;
+        String routingKey = message.getMessageProperties().getReceivedRoutingKey();
+        String context = buildContext(queue, messageId, routingKey, null, null);
 
         try {
-            byte[] body = message.getBody();
-            routingKey = message.getMessageProperties().getReceivedRoutingKey();
-
-            InboundEnvelopeDTO<Object> envelopeDto = parseEnvelope(body,
-                    new TypeReference<InboundEnvelopeDTO<Object>>() {
-                    });
-            envelope = inboundEnvelopeMapper.toInboundEnvelope(envelopeDto);
-            envelopeValidator.validate(envelope);
+            envelope = envelopeInboundMapper.parseEnvelope(message.getBody());
+            envelopeInboundMapper.validate(envelope);
 
             String correlationId = envelope.correlationId() != null
                     ? envelope.correlationId().toString()
                     : null;
+            String eventId = envelope.eventId() != null ? envelope.eventId().toString() : null;
+            context = buildContext(queue, messageId, routingKey, eventId, correlationId);
 
             processedEventGuard.ensureNotProcessed(ConsumerCatalog.ACOLHIMENTO_CONSUMER, envelope.eventId(),
                     correlationId);
 
-            EventOutcome outcome = dispatchByRoutingKey(routingKey, body, envelope);
+            EventOutcome outcome = dispatchByRoutingKey(routingKey, envelope);
             publishProcessingResult(routingKey, envelope, outcome);
 
             if (outcome.retryable()) {
-                channel.basicNack(deliveryTag, false, true);
+                rabbitAcknowledgementConfig.nackRetry(channel, deliveryTag, context);
             } else {
-                channel.basicAck(deliveryTag, false);
+                rabbitAcknowledgementConfig.ack(channel, deliveryTag, context);
             }
 
         } catch (NucleoRelacionamentoException ex) {
+            if (ex.getReasonCode() == ReasonCode.INBOUND_PARSE_ERROR) {
+                log.error("Falha de parse no consumer acolhimento. {}", context, ex);
+                rabbitAcknowledgementConfig.nackDeadLetter(channel, deliveryTag, context);
+                return;
+            }
+
             if (ex.isRetryable()) {
                 log.error("Erro retentavel no consumer acolhimento. reason={}", ex.getReasonCode(), ex);
-                channel.basicNack(deliveryTag, false, true);
+                rabbitAcknowledgementConfig.nackRetry(channel, deliveryTag, context);
             } else {
-                log.warn("Erro nao retentavel no consumer acolhimento. reason={}", ex.getReasonCode());
+                log.warn(
+                        "Erro nao retentavel no consumer acolhimento. reason={}, message={}, {}",
+                        ex.getReasonCode(),
+                        ex.getMessage(),
+                        context);
                 tryPublishEarlyRejection(envelope, routingKey, ex);
-                channel.basicAck(deliveryTag, false);
+                rabbitAcknowledgementConfig.ack(channel, deliveryTag, context);
             }
-        } catch (RuntimeException | IOException ex) {
-            log.error("Erro inesperado no consumer acolhimento.", ex);
-            channel.basicNack(deliveryTag, false, true);
+        } catch (RuntimeException ex) {
+            log.error("Erro inesperado no consumer acolhimento. {}", context, ex);
+            rabbitAcknowledgementConfig.nackRetry(channel, deliveryTag, context);
         }
     }
 
-    private void tryPublishEarlyRejection(InboundEnvelopeDTO<Object> envelope, String routingKey,
+    private void tryPublishEarlyRejection(
+            InboundEnvelopeDTO<Object> envelope,
+            String routingKey,
             NucleoRelacionamentoException ex) {
         if (envelope == null || routingKey == null || ex.getReasonCode() == ReasonCode.DUPLICATE_EVENT) {
             return;
@@ -126,49 +122,23 @@ public class AcolhimentoConsumer {
         }
     }
 
-    private EventOutcome dispatchByRoutingKey(String routingKey, byte[] body,
+    private EventOutcome dispatchByRoutingKey(
+            String routingKey,
             InboundEnvelopeDTO<Object> envelope) {
-        String correlationId = envelope.correlationId() != null
-                ? envelope.correlationId().toString()
-                : null;
-
-        return switch (routingKey) {
-            case RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1 -> {
-                InboundEnvelopeDTO<AcolhimentoCreatedDTO> createdEnvelopeDto = parseEnvelope(body,
-                        new TypeReference<InboundEnvelopeDTO<AcolhimentoCreatedDTO>>() {
-                        });
-                AcolhimentoCreatedDTO createdPayload = acolhimentoInboundMapper
-                        .toCreatedPayload(createdEnvelopeDto.payload());
-                yield processAcolhimentoCreatedUseCase.execute(
-                        ConsumerCatalog.ACOLHIMENTO_CONSUMER, routingKey, envelope, createdPayload);
-            }
-            case RoutingKeyCatalog.ACOLHIMENTO_UPDATED_V1 -> {
-                InboundEnvelopeDTO<AcolhimentoUpdatedDTO> updatedEnvelopeDto = parseEnvelope(body,
-                        new TypeReference<InboundEnvelopeDTO<AcolhimentoUpdatedDTO>>() {
-                        });
-                AcolhimentoUpdatedDTO updatedPayload = acolhimentoInboundMapper
-                        .toUpdatedPayload(updatedEnvelopeDto.payload());
-                yield processAcolhimentoUpdatedUseCase.execute(
-                        ConsumerCatalog.ACOLHIMENTO_CONSUMER, routingKey, envelope, updatedPayload);
-            }
-            case RoutingKeyCatalog.ACOLHIMENTO_DELETED_V1 -> {
-                InboundEnvelopeDTO<AcolhimentoDeletedDTO> deletedEnvelopeDto = parseEnvelope(body,
-                        new TypeReference<InboundEnvelopeDTO<AcolhimentoDeletedDTO>>() {
-                        });
-                AcolhimentoDeletedDTO deletedPayload = acolhimentoInboundMapper
-                        .toDeletedPayload(deletedEnvelopeDto.payload());
-                yield processAcolhimentoDeletedUseCase.execute(
-                        ConsumerCatalog.ACOLHIMENTO_CONSUMER, routingKey, envelope, deletedPayload);
-            }
-            default -> {
-                log.warn("Routing key nao suportada: {}", routingKey);
-                throw new NucleoRelacionamentoException(
-                        ReasonCode.UNSUPPORTED_ROUTING_KEY, correlationId);
-            }
-        };
+        AcolhimentoRoutingHandler handler = routingHandlers.get(routingKey);
+        if (handler == null) {
+            String correlationId = envelope.correlationId() != null
+                    ? envelope.correlationId().toString()
+                    : null;
+            log.warn("Routing key nao suportada: {}", routingKey);
+            throw new NucleoRelacionamentoException(
+                    ReasonCode.UNSUPPORTED_ROUTING_KEY, correlationId);
+        }
+        return handler.handle(envelope);
     }
 
-    private void publishProcessingResult(String upstreamRoutingKey,
+    private void publishProcessingResult(
+            String upstreamRoutingKey,
             InboundEnvelopeDTO<Object> inboundEnvelope,
             EventOutcome eventOutcome) {
         if (eventOutcome.result() == ProcessedResult.SUCCESS) {
@@ -180,12 +150,16 @@ public class AcolhimentoConsumer {
         }
     }
 
-    private <T> InboundEnvelopeDTO<T> parseEnvelope(byte[] body, TypeReference<InboundEnvelopeDTO<T>> typeRef) {
-        try {
-            return objectMapper.readValue(body, typeRef);
-        } catch (IOException ex) {
-            throw new NucleoRelacionamentoException(
-                    ReasonCode.VALIDATION_ERROR, null, "Falha ao parsear envelope: " + ex.getMessage());
-        }
+    private String buildContext(
+            String queue,
+            String messageId,
+            String routingKey,
+            String eventId,
+            String correlationId) {
+        return "queue=" + queue
+                + ",messageId=" + messageId
+                + ",routingKey=" + routingKey
+                + ",eventId=" + eventId
+                + ",correlationId=" + correlationId;
     }
 }

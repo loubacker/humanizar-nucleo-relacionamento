@@ -13,11 +13,11 @@ import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
-import com.humanizar.nucleorelacionamento.application.mapper.InboundEnvelopeMapper;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.QueueCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.ProcessingResultPublisher;
 import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
+import com.humanizar.nucleorelacionamento.infrastructure.config.rabbit.RabbitAcknowledgementConfig;
 import com.rabbitmq.client.Channel;
 
 @Component
@@ -26,15 +26,15 @@ public class DeadLetterConsumer {
     private static final Logger log = LoggerFactory.getLogger(DeadLetterConsumer.class);
 
     private final ObjectMapper objectMapper;
-    private final InboundEnvelopeMapper inboundEnvelopeMapper;
     private final ProcessingResultPublisher processingResultPublisher;
+    private final RabbitAcknowledgementConfig rabbitAcknowledgementConfig;
 
     public DeadLetterConsumer(ObjectMapper objectMapper,
-            InboundEnvelopeMapper inboundEnvelopeMapper,
-            ProcessingResultPublisher processingResultPublisher) {
+            ProcessingResultPublisher processingResultPublisher,
+            RabbitAcknowledgementConfig rabbitAcknowledgementConfig) {
         this.objectMapper = objectMapper;
-        this.inboundEnvelopeMapper = inboundEnvelopeMapper;
         this.processingResultPublisher = processingResultPublisher;
+        this.rabbitAcknowledgementConfig = rabbitAcknowledgementConfig;
     }
 
     @RabbitListener(queues = {
@@ -54,7 +54,7 @@ public class DeadLetterConsumer {
             InboundEnvelopeDTO<Object> envelopeDto = objectMapper.readValue(
                     message.getBody(), new TypeReference<>() {
                     });
-            InboundEnvelopeDTO<Object> envelope = inboundEnvelopeMapper.toInboundEnvelope(envelopeDto);
+            InboundEnvelopeDTO<Object> envelope = envelopeDto;
 
             if (originalRoutingKey != null) {
                 EventOutcome rejection = EventOutcome.failed(
@@ -68,7 +68,10 @@ public class DeadLetterConsumer {
             log.error("Falha ao processar mensagem DLQ. Mensagem sera apenas logada e confirmada.", ex);
         }
 
-        channel.basicAck(deliveryTag, false);
+        String context = "queue=" + message.getMessageProperties().getConsumerQueue()
+                + ",messageId=" + message.getMessageProperties().getMessageId()
+                + ",originalRoutingKey=" + originalRoutingKey;
+        rabbitAcknowledgementConfig.ack(channel, deliveryTag, context);
     }
 
     private String extractOriginalRoutingKey(Message message) {

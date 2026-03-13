@@ -15,129 +15,168 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.core.MessageProperties;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.dto.NucleoPatientDTO;
 import com.humanizar.nucleorelacionamento.application.dto.ResponsavelDTO;
 import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoCreatedDTO;
-import com.humanizar.nucleorelacionamento.application.mapper.AcolhimentoInboundMapper;
-import com.humanizar.nucleorelacionamento.application.mapper.InboundEnvelopeMapper;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.validator.EnvelopeValidator;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.acolhimento.AcolhimentoCreatedRoutingHandler;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.acolhimento.AcolhimentoDeletedRoutingHandler;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.acolhimento.AcolhimentoRoutingHandler;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.acolhimento.AcolhimentoUpdatedRoutingHandler;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.mapper.EnvelopeInboundMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.mapper.acolhimento.InboundAcolhimentoCreateMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.mapper.acolhimento.InboundAcolhimentoDeleteMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.mapper.acolhimento.InboundAcolhimentoUpdateMapper;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.ProcessingResultPublisher;
-import com.humanizar.nucleorelacionamento.application.usecase.inbound.acolhimento.AcolhimentoCreatedUseCase;
-import com.humanizar.nucleorelacionamento.application.usecase.inbound.acolhimento.AcolhimentoDeletedUseCase;
-import com.humanizar.nucleorelacionamento.application.usecase.inbound.acolhimento.AcolhimentoUpdatedUseCase;
+import com.humanizar.nucleorelacionamento.application.usecase.acolhimento.AcolhimentoCreatedUseCase;
+import com.humanizar.nucleorelacionamento.application.usecase.acolhimento.AcolhimentoDeletedUseCase;
+import com.humanizar.nucleorelacionamento.application.usecase.acolhimento.AcolhimentoUpdatedUseCase;
+import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
+import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
+import com.humanizar.nucleorelacionamento.infrastructure.config.rabbit.RabbitAcknowledgementConfig;
 import com.humanizar.nucleorelacionamento.infrastructure.messaging.inbound.idempotency.ProcessedEventGuard;
 import com.rabbitmq.client.Channel;
-
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageProperties;
 
 @ExtendWith(MockitoExtension.class)
 class AcolhimentoConsumerTest {
 
-        @Mock
-        private ObjectMapper objectMapper;
+    @Mock
+    private EnvelopeInboundMapper envelopeInboundMapper;
 
-        @Mock
-        private EnvelopeValidator envelopeValidator;
+    @Mock
+    private InboundAcolhimentoCreateMapper inboundAcolhimentoCreateMapper;
 
-        @Mock
-        private ProcessedEventGuard processedEventGuard;
+    @Mock
+    private InboundAcolhimentoUpdateMapper inboundAcolhimentoUpdateMapper;
 
-        @Mock
-        private ProcessingResultPublisher processingResultPublisher;
+    @Mock
+    private InboundAcolhimentoDeleteMapper inboundAcolhimentoDeleteMapper;
 
-        @Mock
-        private AcolhimentoCreatedUseCase processAcolhimentoCreatedUseCase;
+    @Mock
+    private ProcessedEventGuard processedEventGuard;
 
-        @Mock
-        private AcolhimentoUpdatedUseCase processAcolhimentoUpdatedUseCase;
+    @Mock
+    private ProcessingResultPublisher processingResultPublisher;
 
-        @Mock
-        private AcolhimentoDeletedUseCase processAcolhimentoDeletedUseCase;
+    @Mock
+    private AcolhimentoCreatedUseCase acolhimentoCreatedUseCase;
 
-        @Mock
-        private Channel channel;
+    @Mock
+    private AcolhimentoUpdatedUseCase acolhimentoUpdatedUseCase;
 
-        @Test
-        @SuppressWarnings("unchecked")
-        void shouldRouteCreatedToCreatedUseCaseAndAck() throws IOException {
-                UUID eventId = UUID.randomUUID();
-                UUID correlationId = UUID.randomUUID();
-                UUID aggregateId = UUID.randomUUID();
-                UUID actorId = UUID.randomUUID();
-                long deliveryTag = 55L;
+    @Mock
+    private AcolhimentoDeletedUseCase acolhimentoDeletedUseCase;
 
-                InboundEnvelopeDTO<Object> envelopeDto = new InboundEnvelopeDTO<>(
-                                eventId,
-                                correlationId,
-                                "humanizar-acolhimento",
-                                "humanizar.acolhimento.command",
-                                RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1,
-                                "acolhimento",
-                                aggregateId,
-                                1,
-                                LocalDateTime.now(),
-                                actorId,
-                                "JUnit",
-                                "127.0.0.1",
-                                new Object());
+    @Mock
+    private Channel channel;
 
-                AcolhimentoCreatedDTO createdPayload = new AcolhimentoCreatedDTO(
-                                UUID.randomUUID(),
-                                List.of(new NucleoPatientDTO(
-                                                UUID.randomUUID(),
-                                                UUID.randomUUID(),
-                                                List.of(new ResponsavelDTO(UUID.randomUUID(), "COORDENADOR")))));
-                InboundEnvelopeDTO<AcolhimentoCreatedDTO> createdEnvelopeDto = new InboundEnvelopeDTO<>(
-                                eventId,
-                                correlationId,
-                                "humanizar-acolhimento",
-                                "humanizar.acolhimento.command",
-                                RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1,
-                                "acolhimento",
-                                aggregateId,
-                                1,
-                                LocalDateTime.now(),
-                                actorId,
-                                "JUnit",
-                                "127.0.0.1",
-                                createdPayload);
+    @Test
+    void shouldAckAndPublishProcessedWhenCreatedSucceeds() throws IOException {
+        long deliveryTag = 10L;
 
-                when(objectMapper.readValue(any(byte[].class), any(TypeReference.class)))
-                                .thenReturn(envelopeDto, createdEnvelopeDto);
-                when(processAcolhimentoCreatedUseCase.execute(any(), any(), any(), any()))
-                                .thenReturn(EventOutcome.success());
+        InboundEnvelopeDTO<Object> envelope = baseEnvelope(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1, new Object());
+        AcolhimentoCreatedDTO payload = new AcolhimentoCreatedDTO(
+                UUID.randomUUID(),
+                List.of(new NucleoPatientDTO(
+                        UUID.randomUUID(),
+                        UUID.randomUUID(),
+                        List.of(new ResponsavelDTO(UUID.randomUUID(), "COORDENADOR")))));
 
-                AcolhimentoConsumer consumer = new AcolhimentoConsumer(
-                                objectMapper,
-                                envelopeValidator,
-                                processedEventGuard,
-                                processingResultPublisher,
-                                new InboundEnvelopeMapper(),
-                                new AcolhimentoInboundMapper(),
-                                processAcolhimentoCreatedUseCase,
-                                processAcolhimentoUpdatedUseCase,
-                                processAcolhimentoDeletedUseCase);
+        when(envelopeInboundMapper.parseEnvelope(any(byte[].class))).thenReturn(envelope);
+        when(inboundAcolhimentoCreateMapper.toPayload(envelope)).thenReturn(payload);
+        when(acolhimentoCreatedUseCase.execute(any(), any(), any(), any())).thenReturn(EventOutcome.success());
 
-                MessageProperties properties = new MessageProperties();
-                properties.setReceivedRoutingKey(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1);
-                properties.setDeliveryTag(deliveryTag);
-                Message message = new Message("{}".getBytes(), properties);
+        AcolhimentoConsumer consumer = buildConsumer();
+        consumer.onMessage(message(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1, deliveryTag), channel);
 
-                consumer.onMessage(message, channel);
+        verify(acolhimentoCreatedUseCase).execute(any(), eq(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1), eq(envelope),
+                eq(payload));
+        verify(channel).basicAck(deliveryTag, false);
+        verify(processingResultPublisher).publishProcessed(envelope, RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1);
+        verify(acolhimentoUpdatedUseCase, never()).execute(any(), any(), any(), any());
+        verify(acolhimentoDeletedUseCase, never()).execute(any(), any(), any(), any());
+    }
 
-                verify(processAcolhimentoCreatedUseCase).execute(any(), eq(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1),
-                                any(),
-                                any());
-                verify(processAcolhimentoUpdatedUseCase, never()).execute(any(), any(), any(), any());
-                verify(processAcolhimentoDeletedUseCase, never()).execute(any(), any(), any(), any());
-                verify(channel).basicAck(deliveryTag, false);
-                verify(processingResultPublisher).publishProcessed(any(), eq(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1));
-        }
+    @Test
+    void shouldNackRetryWhenUseCaseReturnsRetryableOutcome() throws IOException {
+        long deliveryTag = 11L;
+
+        InboundEnvelopeDTO<Object> envelope = baseEnvelope(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1, new Object());
+        AcolhimentoCreatedDTO payload = new AcolhimentoCreatedDTO(UUID.randomUUID(), List.of());
+
+        when(envelopeInboundMapper.parseEnvelope(any(byte[].class))).thenReturn(envelope);
+        when(inboundAcolhimentoCreateMapper.toPayload(envelope)).thenReturn(payload);
+        when(acolhimentoCreatedUseCase.execute(any(), any(), any(), any()))
+                .thenReturn(EventOutcome.failed(ReasonCode.PERSISTENCE_FAILURE));
+
+        AcolhimentoConsumer consumer = buildConsumer();
+        consumer.onMessage(message(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1, deliveryTag), channel);
+
+        verify(channel).basicNack(deliveryTag, false, true);
+        verify(processingResultPublisher, never()).publishRejected(any(), any(), any());
+    }
+
+    @Test
+    void shouldNackDeadLetterWhenInboundParseFails() throws IOException {
+        long deliveryTag = 12L;
+
+        when(envelopeInboundMapper.parseEnvelope(any(byte[].class)))
+                .thenThrow(new NucleoRelacionamentoException(ReasonCode.INBOUND_PARSE_ERROR, null));
+
+        AcolhimentoConsumer consumer = buildConsumer();
+        consumer.onMessage(message(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1, deliveryTag), channel);
+
+        verify(channel).basicNack(deliveryTag, false, false);
+        verify(acolhimentoCreatedUseCase, never()).execute(any(), any(), any(), any());
+    }
+
+    private AcolhimentoConsumer buildConsumer() {
+        AcolhimentoRoutingHandler createdHandler = new AcolhimentoCreatedRoutingHandler(
+                inboundAcolhimentoCreateMapper,
+                acolhimentoCreatedUseCase);
+        AcolhimentoRoutingHandler updatedHandler = new AcolhimentoUpdatedRoutingHandler(
+                inboundAcolhimentoUpdateMapper,
+                acolhimentoUpdatedUseCase);
+        AcolhimentoRoutingHandler deletedHandler = new AcolhimentoDeletedRoutingHandler(
+                inboundAcolhimentoDeleteMapper,
+                acolhimentoDeletedUseCase);
+
+        return new AcolhimentoConsumer(
+                envelopeInboundMapper,
+                processedEventGuard,
+                processingResultPublisher,
+                List.of(createdHandler, updatedHandler, deletedHandler),
+                new RabbitAcknowledgementConfig());
+    }
+
+    private Message message(String routingKey, long deliveryTag) {
+        MessageProperties properties = new MessageProperties();
+        properties.setReceivedRoutingKey(routingKey);
+        properties.setDeliveryTag(deliveryTag);
+        properties.setMessageId(UUID.randomUUID().toString());
+        properties.setConsumerQueue("q.acolhimento");
+        return new Message("{}".getBytes(), properties);
+    }
+
+    private InboundEnvelopeDTO<Object> baseEnvelope(String routingKey, Object payload) {
+        return new InboundEnvelopeDTO<>(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "humanizar-acolhimento",
+                "humanizar.acolhimento.command",
+                routingKey,
+                "acolhimento",
+                UUID.randomUUID(),
+                1,
+                LocalDateTime.now(),
+                UUID.randomUUID(),
+                "JUnit",
+                "127.0.0.1",
+                payload);
+    }
 }

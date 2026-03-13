@@ -30,6 +30,7 @@
 	<properties>
         <java.version>25</java.version>
 		<spring-cloud.version>2025.1.1</spring-cloud.version>
+        <spring-boot.version>4.0.3</spring-boot.version>
 	</properties>
 
 	<!-- Dependencias de Spring Cloud -->

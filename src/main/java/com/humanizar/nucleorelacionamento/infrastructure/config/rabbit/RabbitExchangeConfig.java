@@ -15,8 +15,18 @@ public class RabbitExchangeConfig {
     }
 
     @Bean
+    public TopicExchange acolhimentoEventExchange() {
+        return new TopicExchange(ExchangeCatalog.ACOLHIMENTO_EVENT, true, false);
+    }
+
+    @Bean
     public TopicExchange programaExchange() {
         return new TopicExchange(ExchangeCatalog.PROGRAMA_COMMAND, true, false);
+    }
+
+    @Bean
+    public TopicExchange programaEventExchange() {
+        return new TopicExchange(ExchangeCatalog.PROGRAMA_EVENT, true, false);
     }
 
     @Bean

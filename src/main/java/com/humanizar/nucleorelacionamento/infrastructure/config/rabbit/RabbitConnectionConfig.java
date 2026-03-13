@@ -8,6 +8,7 @@ import java.net.UnknownHostException;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
 
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.connection.ConnectionNameStrategy;
@@ -48,6 +49,7 @@ public class RabbitConnectionConfig {
         SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
         configurer.configure(factory, connectionFactory);
         factory.setTaskExecutor(new TaskExecutorAdapter(inboundExecutor));
+        factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
         return factory;
     }
 

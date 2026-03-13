@@ -19,16 +19,8 @@ public class OutboxEventPublisher {
         this.outboxEventMapper = outboxEventMapper;
     }
 
-    public void publish(String routingKey, UUID aggregateId,
-            UUID correlationId, Object payload,
-            UUID actorId, String userAgent, String originIp) {
-        OutboxEvent event = outboxEventMapper.toOutboxEvent(
-                routingKey, aggregateId, correlationId, payload,
-                actorId, userAgent, originIp);
-        outboxEventPort.save(event);
-    }
-
-    public void publish(String routingKey,
+    public void publish(String exchangeName,
+            String routingKey,
             String aggregateType,
             UUID aggregateId,
             UUID eventId,
@@ -38,6 +30,7 @@ public class OutboxEventPublisher {
             String userAgent,
             String originIp) {
         OutboxEvent event = outboxEventMapper.toOutboxEvent(
+                exchangeName,
                 routingKey,
                 aggregateType,
                 aggregateId,

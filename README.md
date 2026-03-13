@@ -1,95 +1,179 @@
-<div align="center">
-  <h1>Humanizar - Núcleo Relacionamento (Microservice)</h1>
-  <p>Gestão do Relacionamento entre Núcleo e Paciente dentro do ecossistema Humanizar.</p>
+﻿<div align="center">
+  <h1>Humanizar - Nucleo Relacionamento (Microservice)</h1>
+  <p>Gestao do relacionamento entre Nucleo e Paciente no ecossistema Humanizar.</p>
 
   <img alt="Java" src="https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" />
   <img alt="Spring Boot" src="https://img.shields.io/badge/Spring_Boot-4.0.3-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" />
-  <img alt="GraalVM" src="https://img.shields.io/badge/GraalVM_Native-25-E76F00?style=for-the-badge&logo=oracle&logoColor=white" />
   <img alt="RabbitMQ" src="https://img.shields.io/badge/RabbitMQ-%23FF6600.svg?style=for-the-badge&logo=rabbitmq&logoColor=white" />
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" />
-  <img alt="Docker" src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white" />
 </div>
 
 <br/>
 
-O microserviço controla as vinculações de pacientes aos núcleos de atendimento, gerencia os responsáveis (Coordenadores/Administradores) e mantém a sincronia de abordagens clínicas através de uma arquitetura estritamente **Event-Driven**. Não há endpoints REST expostos; toda a interação ocorre através do consumo e produção de mensagens no RabbitMQ.
+Servico EDA (sem endpoint REST de negocio) responsavel por sincronizar vinculos de nucleos, responsaveis e abordagens a partir de eventos inbound, com idempotencia, outbox transacional e callbacks de processamento.
 
-## Arquitetura e Padrões
+## Arquitetura e padroes
 
-O projeto foi construído focando em alta escalabilidade, resiliência e isolamento de regras de negócio.
+- Hexagonal architecture (`application`, `domain`, `infrastructure`).
+- Inbound segregado por routing key (handlers dedicados por operacao).
+- Validacao de envelope/payload em mappers inbound por dominio/operacao.
+- Outbox transacional para publicacao assincrona confiavel.
+- Idempotencia via `processed_event` antes do processamento de regra.
+- ACK/NACK manual do RabbitMQ com politica explicita por tipo de erro.
 
-- **Hexagonal Architecture (Ports & Adapters):** O core da aplicação (`domain`) é isolado de tecnologias externas. A comunicação com o banco de dados e mensageria é feita através de portas (interfaces) e adaptadores (`infrastructure`).
-- **Transactional Outbox Pattern:** Para garantir a entrega de mensagens ao RabbitMQ sem risco de dupla escrita ou perda de dados, os eventos de saída são salvos na mesma transação de banco (`outbox_event`) e despachados assincronamente por um Relay Worker (`OutboxRelayWorker`).
-- **Idempotência:** Todo evento de entrada possui um mecanismo de guarda (`ProcessedEventGuard`) que registra eventos processados na tabela `processed_event`. Eventos duplicados são ignorados automaticamente.
-- **Virtual Threads:** Otimização de concorrência e I/O bloqueante habilitada ativamente no Spring Boot (`VirtualThreadsConfig`), utilizando o poder do Project Loom do Java 25 para consumo massivo de filas.
-- **GraalVM Native Image:** A aplicação é compilada AOT (Ahead-of-Time) em um binário nativo autônomo, eliminando a JVM do runtime para startup instantâneo e footprint de memória mínimo.
+## Comunicacao assincrona (RabbitMQ)
 
-## Contexto de Negócio e Domínio
+### Inbound (consome)
 
-A base da aplicação é regida por 3 entidades principais do domínio:
-
-- **`NucleoPatient`:** A entidade agregadora central. Define a qual Núcleo de Atendimento um Paciente pertence, baseando-se nos eventos de acolhimento e programas recebidos.
-- **`NucleoPatientResponsavel`:** Gerencia as permissões e o ciclo de vida dos profissionais (Coordenadores e Administradores) responsáveis pelos núcleos e pacientes vinculados.
-- **`AbordagemPatient`:** Mantém o histórico e a sincronização das abordagens terapêuticas aplicadas ao paciente durante o programa de atendimento.
-
-## 🔄 Comunicação Assíncrona (RabbitMQ)
-
-A aplicação atua como um **Worker Service**, sendo reativa a eventos externos para consolidar seu domínio e emitindo eventos como consequência.
-
-### Consome (Inbound)
-
-A aplicação escuta filas para sincronizar o relacionamento quando ações acontecem nos microserviços de Acolhimento e Programa:
-
-**Exchange: `humanizar.acolhimento.command`**
+**Exchange `humanizar.acolhimento.command`**
 - `cmd.acolhimento.created.v1`
 - `cmd.acolhimento.updated.v1`
 - `cmd.acolhimento.deleted.v1`
 
-**Exchange: `humanizar.programa.command`**
+**Exchange `humanizar.programa.command`**
 - `cmd.programa.created.v1`
 - `cmd.programa.updated.v1`
 - `cmd.programa.deleted.v1`
 
-### Produz (Outbound - Via Outbox)
+### Outbound (produz via outbox)
 
-Ao processar eventos com sucesso (ou falha impeditiva), a aplicação emite resultados de volta ao ecossistema usando a tabela de Outbox:
+O outbound esta separada em 2 trilhas:
 
-**Exchange: `humanizar.nucleo-relacionamento.event`**
+1. **Eventos de dominio downstream**
+
+**Exchange `humanizar.nucleo-relacionamento.event`**
 - `ev.nucleo.responsavel.vinculado.v1`
 - `ev.nucleo.responsavel.desvinculado.v1`
-- `ev.nucleo-relacionamento.[acolhimento|programa].processed.v1`
-- `ev.nucleo-relacionamento.[acolhimento|programa].rejected.v1`
 
-## Resiliência e Tolerância a Falhas
+Contrato publicado: `OutboundEnvelopeDTO<T>` (metadados + payload).
 
-Como a saúde do ecossistema depende deste Worker, estratégias de resiliência foram implementadas na camada de `infrastructure`:
+2. **Callbacks de processamento para upstream**
 
-- **Dead Letter Queues (DLQ):** Mensagens não processadas por falhas sistêmicas nas filas principais caem em filas `-dlq` e são reprocessadas de forma controlada ou alertadas via `DeadLetterConsumer`.
-- **Outbox Retry Policy:** O despachante de eventos (Outbox) utiliza uma política de retentativas. Se o RabbitMQ estiver indisponível no momento de publicar uma mensagem salva no banco, a `OutboxRetryPolicy` garante tentativas graduais (backoff) antes de marcá-la como `FAILED`.
-- **Validação Antecipada:** O `EnvelopeValidator` e os validadores de payload bloqueiam mensagens malformadas antes mesmo de tocarem a regra de negócio.
+**Exchange `humanizar.acolhimento.event`**
+- `ev.acolhimento.nucleo-relacionamento.processed.v1`
+- `ev.acolhimento.nucleo-relacionamento.rejected.v1`
 
-## Estrutura do Projeto
+**Exchange `humanizar.programa.event`**
+- `ev.nucleo-relacionamento.programa.processed.v1`
+- `ev.nucleo-relacionamento.programa.rejected.v1`
+
+Contrato publicado: `CallbackDTO`.
+
+## Contratos de payload outbound
+
+### 1) Dominio Downstream (`humanizar.nucleo-relacionamento.event`)
+
+```json
+{
+  "eventId": "uuid",
+  "correlationId": "uuid",
+  "producerService": "humanizar-nucleo-relacionamento",
+  "occurredAt": "2026-03-13T02:00:00",
+  "actorId": "uuid",
+  "userAgent": "Mozilla/5.0 ...",
+  "originIp": "127.0.0.1",
+  "payload": {
+    "patientId": "uuid",
+    "nucleoPatient": []
+  }
+}
+```
+
+### 2) Callback Upstream (`humanizar.acolhimento.event` / `humanizar.programa.event`)
+
+```json
+{
+  "upStream": "cmd.acolhimento.created.v1",
+  "eventId": "uuid",
+  "correlationId": "uuid",
+  "producerService": "humanizar-nucleo-relacionamento",
+  "exchangeName": "humanizar.acolhimento.event",
+  "routingKey": "ev.acolhimento.nucleo-relacionamento.processed.v1",
+  "aggregateType": "acolhimento",
+  "aggregateId": "uuid",
+  "eventVersion": 1,
+  "occurredAt": "2026-03-13T02:00:00",
+  "actorId": "uuid",
+  "userAgent": "Mozilla/5.0 ...",
+  "originIp": "127.0.0.1",
+  "status": "PROCESSED",
+  "reasonCode": null,
+  "errorMessage": null,
+  "processedAt": "2026-03-13T02:00:00",
+  "rejectedAt": null
+}
+```
+
+## Resiliencia e tolerancia a falhas
+
+### ACK/NACK manual
+
+`rabbitListenerContainerFactory` roda com `AcknowledgeMode.MANUAL`.
+
+Política de consumo:
+- `ack`: sucesso, duplicado, erro funcional sem retry.
+- `nackRetry` (`requeue=true`): erro segue para retry.
+- `nackDeadLetter` (`requeue=false`): parse invalido / mensagem invalida.
+
+Implementacao central: `RabbitAcknowledgementConfig`.
+
+### DLQ
+
+Filas principais:
+- `humanizar-nucleo-relacionamento.acolhimento`
+- `humanizar-nucleo-relacionamento.programa`
+
+Filas de dead-letter:
+- `humanizar-nucleo-relacionamento.acolhimento.dlq`
+- `humanizar-nucleo-relacionamento.programa.dlq`
+
+### Idempotencia
+
+Antes do processamento de regra, o consumer valida duplicidade via `ProcessedEventGuard`.
+
+## Workers em background
+
+### OutboxRelayWorker (5s)
+
+- Faz claim de eventos em `NEW`, `FAILED` e `LOCKED`.
+- Aplica lock ownership por `instanceId` (fencing).
+- Publica assincronamente com controle de paralelismo.
+
+### OutboxEventProcessor
+
+Transicoes de status:
+- sucesso: `LOCKED -> PUBLISHED`
+- falha retentavel: `LOCKED -> FAILED` (com `nextRetryAt`)
+- tentativas esgotadas: `LOCKED -> DEAD`
+
+### RetentionWorker (1h)
+
+- Remove outbox antigo (`PUBLISHED` e `DEAD`) > 48h.
+- Remove `processed_event` antigo > 90 dias.
+
+## Estrutura do projeto
 
 ```text
 src/main/java/com/humanizar/nucleorelacionamento/
-├── application/      # Casos de uso, DTOs, Mappers e Orquestração (Inbound/Outbound)
-├── domain/           # Regras de negócio, Entidades (Entities), Enums, Exceções e Ports
-└── infrastructure/   # Adapters (JPA, RabbitMQ, Outbox), Configurações, Consumidores
+|-- application/
+|   |-- messaging/inbound/handler/   # handlers por routing key (acolhimento/programa)
+|   |-- messaging/inbound/mapper/    # EnvelopeInboundMapper + mappers por operacao
+|   |-- messaging/outbound/dto/      # CallbackDTO + OutboundEnvelopeDTO + payload DTOs
+|   |-- messaging/outbound/mapper/   # OutboxEventMapper + mappers outbound de dominio/callback
+|-- domain/                          # entidades, enums, exceptions, ports
+`-- infrastructure/                  # adapters, rabbit config, consumers, outbox relay
 ```
 
-## 🔐 Segurança
+## Como executar localmente
 
-Mesmo sem rotas HTTP públicas para clientes, as proteções e configurações Spring Security via OAuth2 Resource Server utilizando JWT estão prontas. A validação das claims é extraída do token JWT gerado pelo Auth Server (definido em `AUTH_SERVER_URL`), para uso futuro ou chamadas S2S (Server-to-Server).
-
-## Como Executar Localmente
-
-### Pré-requisitos
+### Pre-requisitos
 - JDK 25
-- Docker e Docker Compose (para banco de dados e mensageria)
 - Maven 3.9+
+- PostgreSQL e RabbitMQ (ex.: Docker Compose)
 
-### Configuração de Variáveis de Ambiente
-Crie um arquivo `.env` na raiz do projeto (o Spring fará a leitura automática) com base no `application.yaml`:
+### Variaveis de ambiente
+
+Crie `.env` na raiz do modulo:
 
 ```env
 DB_URL=jdbc:postgresql://localhost:5432/db
@@ -99,28 +183,12 @@ RABBITMQ_URL=amqp://guest:guest@localhost:5672
 AUTH_SERVER_URL=http://localhost:8080
 ```
 
-### Executando a Aplicação
-Suba os serviços dependentes (PostgreSQL e RabbitMQ) utilizando um `docker-compose.yml`. Em seguida, instale as dependências e rode via Maven Wrapper:
+### Execucao
 
 ```bash
 ./mvnw clean install -DskipTests
 ./mvnw spring-boot:run
 ```
 
-A aplicação iniciará na porta `9001` (padrão). O Health Check (Actuator) pode ser acessado em http://localhost:9001/actuator/health.
-
-## 🛠️ Workers em Background
-
-O sistema possui schedulers essenciais rodando em background (`@EnableScheduling`):
-- **OutboxRelayWorker (5s):** Busca eventos na tabela de outbox com status `NEW` ou `FAILED` e publica no RabbitMQ.
-- **RetentionWorker (1h):** Realiza a limpeza de eventos antigos (Purge Cleanup):
-  - Eventos de Outbox (`PUBLISHED`, `DEAD`) mais velhos que 48 horas.
-  - Eventos Processados (Idempotência) mais velhos que 90 dias.
-
-## 🐳 Docker
-
-A aplicação conta com um Dockerfile otimizado em Multi-Stage Build utilizando **GraalVM Native Image**. O stage de build compila a aplicação em um binário nativo autônomo (`native:compile`), e o stage de runtime utiliza `debian:bookworm-slim` — sem JRE, sem JVM. Decisões arquiteturais tomadas para orquestração (Kubernetes/ECS):
-
-- **Binário Nativo (AOT):** Startup em milissegundos e consumo de memória drasticamente reduzido em comparação com execução via JVM.
-- Usuário `appuser` sem privilégios de root (Security First).
-- Flags de TTL DNS (`-Dsun.net.inetaddr.ttl=30`, `-Dsun.net.inetaddr.negative.ttl=2`) aplicadas diretamente no entrypoint do binário.
+Porta padrao: `9001`.
+Health check: `http://localhost:9001/actuator/health`.

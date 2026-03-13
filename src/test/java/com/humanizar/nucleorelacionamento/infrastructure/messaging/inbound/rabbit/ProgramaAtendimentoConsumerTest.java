@@ -15,218 +15,162 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
-import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDeletedDTO;
-import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDTO;
-import com.humanizar.nucleorelacionamento.application.mapper.InboundEnvelopeMapper;
-import com.humanizar.nucleorelacionamento.application.mapper.ProgramaInboundMapper;
-import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
-import com.humanizar.nucleorelacionamento.application.messaging.inbound.validator.EnvelopeValidator;
-import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.ProcessingResultPublisher;
-import com.humanizar.nucleorelacionamento.application.usecase.inbound.programa.ProgramaCreatedUseCase;
-import com.humanizar.nucleorelacionamento.application.usecase.inbound.programa.ProgramaDeletedUseCase;
-import com.humanizar.nucleorelacionamento.application.usecase.inbound.programa.ProgramaUpdatedUseCase;
-import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
-import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
-import com.humanizar.nucleorelacionamento.infrastructure.messaging.inbound.idempotency.ProcessedEventGuard;
-import com.rabbitmq.client.Channel;
-
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
+
+import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
+import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.EventOutcome;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.programa.ProgramaCreatedRoutingHandler;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.programa.ProgramaDeletedRoutingHandler;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.programa.ProgramaRoutingHandler;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.handler.programa.ProgramaUpdatedRoutingHandler;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.mapper.EnvelopeInboundMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.mapper.programa.InboundProgramaCreateMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.mapper.programa.InboundProgramaDeleteMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.inbound.mapper.programa.InboundProgramaUpdateMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.ProcessingResultPublisher;
+import com.humanizar.nucleorelacionamento.application.usecase.programa.ProgramaCreatedUseCase;
+import com.humanizar.nucleorelacionamento.application.usecase.programa.ProgramaDeletedUseCase;
+import com.humanizar.nucleorelacionamento.application.usecase.programa.ProgramaUpdatedUseCase;
+import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
+import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
+import com.humanizar.nucleorelacionamento.infrastructure.config.rabbit.RabbitAcknowledgementConfig;
+import com.humanizar.nucleorelacionamento.infrastructure.messaging.inbound.idempotency.ProcessedEventGuard;
+import com.rabbitmq.client.Channel;
 
 @ExtendWith(MockitoExtension.class)
 class ProgramaAtendimentoConsumerTest {
 
-        @Mock
-        private ObjectMapper objectMapper;
+    @Mock
+    private EnvelopeInboundMapper envelopeInboundMapper;
 
-        @Mock
-        private EnvelopeValidator envelopeValidator;
+    @Mock
+    private InboundProgramaCreateMapper inboundProgramaCreateMapper;
 
-        @Mock
-        private ProcessedEventGuard processedEventGuard;
+    @Mock
+    private InboundProgramaUpdateMapper inboundProgramaUpdateMapper;
 
-        @Mock
-        private ProcessingResultPublisher processingResultPublisher;
+    @Mock
+    private InboundProgramaDeleteMapper inboundProgramaDeleteMapper;
 
-        @Mock
-        private ProgramaCreatedUseCase programaCreatedUseCase;
+    @Mock
+    private ProcessedEventGuard processedEventGuard;
 
-        @Mock
-        private ProgramaUpdatedUseCase programaUpdatedUseCase;
+    @Mock
+    private ProcessingResultPublisher processingResultPublisher;
 
-        @Mock
-        private ProgramaDeletedUseCase programaDeletedUseCase;
+    @Mock
+    private ProgramaCreatedUseCase programaCreatedUseCase;
 
-        @Mock
-        private Channel channel;
+    @Mock
+    private ProgramaUpdatedUseCase programaUpdatedUseCase;
 
-        @Test
-        @SuppressWarnings("unchecked")
-        void shouldRouteCreatedToCreatedUseCaseAndAck() throws IOException {
-                long deliveryTag = 11L;
-                InboundEnvelopeDTO<Object> envelopeDto = baseEnvelope(RoutingKeyCatalog.PROGRAMA_CREATED_V1,
-                                new Object());
-                InboundEnvelopeDTO<List<ProgramaDTO>> createdEnvelopeDto = baseEnvelope(
-                                RoutingKeyCatalog.PROGRAMA_CREATED_V1,
-                                List.of(new ProgramaDTO(UUID.randomUUID(), List.of(UUID.randomUUID()))));
+    @Mock
+    private ProgramaDeletedUseCase programaDeletedUseCase;
 
-                when(objectMapper.readValue(any(byte[].class), any(TypeReference.class)))
-                                .thenReturn(envelopeDto, createdEnvelopeDto);
-                when(programaCreatedUseCase.execute(any(), any(), any(), any()))
-                                .thenReturn(EventOutcome.success());
+    @Mock
+    private Channel channel;
 
-                ProgramaAtendimentoConsumer consumer = buildConsumer();
-                Message message = message(RoutingKeyCatalog.PROGRAMA_CREATED_V1, deliveryTag);
+    @Test
+    void shouldAckAndPublishProcessedWhenCreatedSucceeds() throws IOException {
+        long deliveryTag = 20L;
 
-                consumer.onMessage(message, channel);
+        InboundEnvelopeDTO<Object> envelope = baseEnvelope(RoutingKeyCatalog.PROGRAMA_CREATED_V1, new Object());
+        List<ProgramaDTO> payload = List.of(new ProgramaDTO(UUID.randomUUID(), List.of(UUID.randomUUID())));
 
-                verify(programaCreatedUseCase).execute(any(), eq(RoutingKeyCatalog.PROGRAMA_CREATED_V1), any(), any());
-                verify(programaUpdatedUseCase, never()).execute(any(), any(), any(), any());
-                verify(programaDeletedUseCase, never()).execute(any(), any(), any(), any());
-                verify(channel).basicAck(deliveryTag, false);
-                verify(processingResultPublisher).publishProcessed(any(), eq(RoutingKeyCatalog.PROGRAMA_CREATED_V1));
-        }
+        when(envelopeInboundMapper.parseEnvelope(any(byte[].class))).thenReturn(envelope);
+        when(inboundProgramaCreateMapper.toPayload(envelope)).thenReturn(payload);
+        when(programaCreatedUseCase.execute(any(), any(), any(), any())).thenReturn(EventOutcome.success());
 
-        @Test
-        @SuppressWarnings("unchecked")
-        void shouldRouteUpdatedToUpdatedUseCaseAndAck() throws IOException {
-                long deliveryTag = 12L;
-                InboundEnvelopeDTO<Object> envelopeDto = baseEnvelope(RoutingKeyCatalog.PROGRAMA_UPDATED_V1,
-                                new Object());
-                InboundEnvelopeDTO<List<ProgramaDTO>> updatedEnvelopeDto = baseEnvelope(
-                                RoutingKeyCatalog.PROGRAMA_UPDATED_V1,
-                                List.of(new ProgramaDTO(UUID.randomUUID(), List.of(UUID.randomUUID()))));
+        ProgramaAtendimentoConsumer consumer = buildConsumer();
+        consumer.onMessage(message(RoutingKeyCatalog.PROGRAMA_CREATED_V1, deliveryTag), channel);
 
-                when(objectMapper.readValue(any(byte[].class), any(TypeReference.class)))
-                                .thenReturn(envelopeDto, updatedEnvelopeDto);
-                when(programaUpdatedUseCase.execute(any(), any(), any(), any()))
-                                .thenReturn(EventOutcome.success());
+        verify(programaCreatedUseCase).execute(any(), eq(RoutingKeyCatalog.PROGRAMA_CREATED_V1), eq(envelope),
+                eq(payload));
+        verify(channel).basicAck(deliveryTag, false);
+        verify(processingResultPublisher).publishProcessed(envelope, RoutingKeyCatalog.PROGRAMA_CREATED_V1);
+        verify(programaUpdatedUseCase, never()).execute(any(), any(), any(), any());
+        verify(programaDeletedUseCase, never()).execute(any(), any(), any(), any());
+    }
 
-                ProgramaAtendimentoConsumer consumer = buildConsumer();
-                Message message = message(RoutingKeyCatalog.PROGRAMA_UPDATED_V1, deliveryTag);
+    @Test
+    void shouldAckAndPublishRejectedWhenUseCaseReturnsFunctionalFailure() throws IOException {
+        long deliveryTag = 21L;
 
-                consumer.onMessage(message, channel);
+        InboundEnvelopeDTO<Object> envelope = baseEnvelope(RoutingKeyCatalog.PROGRAMA_CREATED_V1, new Object());
+        List<ProgramaDTO> payload = List.of(new ProgramaDTO(UUID.randomUUID(), List.of(UUID.randomUUID())));
 
-                verify(programaUpdatedUseCase).execute(any(), eq(RoutingKeyCatalog.PROGRAMA_UPDATED_V1), any(), any());
-                verify(channel).basicAck(deliveryTag, false);
-                verify(processingResultPublisher).publishProcessed(any(), eq(RoutingKeyCatalog.PROGRAMA_UPDATED_V1));
-        }
+        when(envelopeInboundMapper.parseEnvelope(any(byte[].class))).thenReturn(envelope);
+        when(inboundProgramaCreateMapper.toPayload(envelope)).thenReturn(payload);
+        when(programaCreatedUseCase.execute(any(), any(), any(), any()))
+                .thenReturn(EventOutcome.failed(ReasonCode.VALIDATION_ERROR));
 
-        @Test
-        @SuppressWarnings("unchecked")
-        void shouldRouteDeletedToDeletedUseCaseAndAck() throws IOException {
-                long deliveryTag = 13L;
-                InboundEnvelopeDTO<Object> envelopeDto = baseEnvelope(RoutingKeyCatalog.PROGRAMA_DELETED_V1,
-                                new Object());
-                InboundEnvelopeDTO<ProgramaDeletedDTO> deletedEnvelopeDto = baseEnvelope(
-                                RoutingKeyCatalog.PROGRAMA_DELETED_V1,
-                                new ProgramaDeletedDTO(UUID.randomUUID()));
+        ProgramaAtendimentoConsumer consumer = buildConsumer();
+        consumer.onMessage(message(RoutingKeyCatalog.PROGRAMA_CREATED_V1, deliveryTag), channel);
 
-                when(objectMapper.readValue(any(byte[].class), any(TypeReference.class)))
-                                .thenReturn(envelopeDto, deletedEnvelopeDto);
-                when(programaDeletedUseCase.execute(any(), any(), any(), any()))
-                                .thenReturn(EventOutcome.success());
+        verify(channel).basicAck(deliveryTag, false);
+        verify(processingResultPublisher).publishRejected(eq(envelope), eq(RoutingKeyCatalog.PROGRAMA_CREATED_V1),
+                any());
+    }
 
-                ProgramaAtendimentoConsumer consumer = buildConsumer();
-                Message message = message(RoutingKeyCatalog.PROGRAMA_DELETED_V1, deliveryTag);
+    @Test
+    void shouldNackDeadLetterWhenInboundParseFails() throws IOException {
+        long deliveryTag = 22L;
 
-                consumer.onMessage(message, channel);
+        when(envelopeInboundMapper.parseEnvelope(any(byte[].class)))
+                .thenThrow(new NucleoRelacionamentoException(ReasonCode.INBOUND_PARSE_ERROR, null));
 
-                verify(programaDeletedUseCase).execute(any(), eq(RoutingKeyCatalog.PROGRAMA_DELETED_V1), any(), any());
-                verify(channel).basicAck(deliveryTag, false);
-                verify(processingResultPublisher).publishProcessed(any(), eq(RoutingKeyCatalog.PROGRAMA_DELETED_V1));
-        }
+        ProgramaAtendimentoConsumer consumer = buildConsumer();
+        consumer.onMessage(message(RoutingKeyCatalog.PROGRAMA_CREATED_V1, deliveryTag), channel);
 
-        @Test
-        @SuppressWarnings("unchecked")
-        void shouldNackWithRequeueWhenRetryableError() throws IOException {
-                long deliveryTag = 14L;
-                InboundEnvelopeDTO<Object> envelopeDto = baseEnvelope(RoutingKeyCatalog.PROGRAMA_CREATED_V1,
-                                new Object());
-                InboundEnvelopeDTO<List<ProgramaDTO>> createdEnvelopeDto = baseEnvelope(
-                                RoutingKeyCatalog.PROGRAMA_CREATED_V1,
-                                List.of(new ProgramaDTO(UUID.randomUUID(), List.of(UUID.randomUUID()))));
+        verify(channel).basicNack(deliveryTag, false, false);
+        verify(programaCreatedUseCase, never()).execute(any(), any(), any(), any());
+    }
 
-                when(objectMapper.readValue(any(byte[].class), any(TypeReference.class)))
-                                .thenReturn(envelopeDto, createdEnvelopeDto);
-                when(programaCreatedUseCase.execute(any(), any(), any(), any()))
-                                .thenThrow(new NucleoRelacionamentoException(ReasonCode.PERSISTENCE_FAILURE,
-                                                UUID.randomUUID().toString()));
+    private ProgramaAtendimentoConsumer buildConsumer() {
+        ProgramaRoutingHandler createdHandler = new ProgramaCreatedRoutingHandler(
+                inboundProgramaCreateMapper,
+                programaCreatedUseCase);
+        ProgramaRoutingHandler updatedHandler = new ProgramaUpdatedRoutingHandler(
+                inboundProgramaUpdateMapper,
+                programaUpdatedUseCase);
+        ProgramaRoutingHandler deletedHandler = new ProgramaDeletedRoutingHandler(
+                inboundProgramaDeleteMapper,
+                programaDeletedUseCase);
 
-                ProgramaAtendimentoConsumer consumer = buildConsumer();
-                Message message = message(RoutingKeyCatalog.PROGRAMA_CREATED_V1, deliveryTag);
+        return new ProgramaAtendimentoConsumer(
+                envelopeInboundMapper,
+                processedEventGuard,
+                processingResultPublisher,
+                List.of(createdHandler, updatedHandler, deletedHandler),
+                new RabbitAcknowledgementConfig());
+    }
 
-                consumer.onMessage(message, channel);
+    private Message message(String routingKey, long deliveryTag) {
+        MessageProperties properties = new MessageProperties();
+        properties.setReceivedRoutingKey(routingKey);
+        properties.setDeliveryTag(deliveryTag);
+        properties.setMessageId(UUID.randomUUID().toString());
+        properties.setConsumerQueue("q.programa");
+        return new Message("{}".getBytes(), properties);
+    }
 
-                verify(channel).basicNack(deliveryTag, false, true);
-                verify(processingResultPublisher, never()).publishRejected(any(), any(), any());
-        }
-
-        @Test
-        @SuppressWarnings("unchecked")
-        void shouldAckAndPublishRejectedWhenNonRetryableError() throws IOException {
-                long deliveryTag = 15L;
-                InboundEnvelopeDTO<Object> envelopeDto = baseEnvelope(RoutingKeyCatalog.PROGRAMA_CREATED_V1,
-                                new Object());
-                InboundEnvelopeDTO<List<ProgramaDTO>> createdEnvelopeDto = baseEnvelope(
-                                RoutingKeyCatalog.PROGRAMA_CREATED_V1,
-                                List.of(new ProgramaDTO(UUID.randomUUID(), List.of(UUID.randomUUID()))));
-
-                when(objectMapper.readValue(any(byte[].class), any(TypeReference.class)))
-                                .thenReturn(envelopeDto, createdEnvelopeDto);
-                when(programaCreatedUseCase.execute(any(), any(), any(), any()))
-                                .thenThrow(new NucleoRelacionamentoException(ReasonCode.VALIDATION_ERROR,
-                                                UUID.randomUUID().toString()));
-
-                ProgramaAtendimentoConsumer consumer = buildConsumer();
-                Message message = message(RoutingKeyCatalog.PROGRAMA_CREATED_V1, deliveryTag);
-
-                consumer.onMessage(message, channel);
-
-                verify(channel).basicAck(deliveryTag, false);
-                verify(processingResultPublisher).publishRejected(any(), eq(RoutingKeyCatalog.PROGRAMA_CREATED_V1),
-                                any());
-        }
-
-        private ProgramaAtendimentoConsumer buildConsumer() {
-                return new ProgramaAtendimentoConsumer(
-                                objectMapper,
-                                envelopeValidator,
-                                processedEventGuard,
-                                processingResultPublisher,
-                                new InboundEnvelopeMapper(),
-                                new ProgramaInboundMapper(),
-                                programaCreatedUseCase,
-                                programaUpdatedUseCase,
-                                programaDeletedUseCase);
-        }
-
-        private Message message(String routingKey, long deliveryTag) {
-                MessageProperties properties = new MessageProperties();
-                properties.setReceivedRoutingKey(routingKey);
-                properties.setDeliveryTag(deliveryTag);
-                return new Message("{}".getBytes(), properties);
-        }
-
-        private <T> InboundEnvelopeDTO<T> baseEnvelope(String routingKey, T payload) {
-                return new InboundEnvelopeDTO<>(
-                                UUID.randomUUID(),
-                                UUID.randomUUID(),
-                                "humanizar-programa",
-                                "humanizar.programa.command",
-                                routingKey,
-                                "programa",
-                                UUID.randomUUID(),
-                                1,
-                                LocalDateTime.now(),
-                                UUID.randomUUID(),
-                                "JUnit",
-                                "127.0.0.1",
-                                payload);
-        }
+    private InboundEnvelopeDTO<Object> baseEnvelope(String routingKey, Object payload) {
+        return new InboundEnvelopeDTO<>(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "humanizar-programa",
+                "humanizar.programa.command",
+                routingKey,
+                "programa",
+                UUID.randomUUID(),
+                1,
+                LocalDateTime.now(),
+                UUID.randomUUID(),
+                "JUnit",
+                "127.0.0.1",
+                payload);
+    }
 }

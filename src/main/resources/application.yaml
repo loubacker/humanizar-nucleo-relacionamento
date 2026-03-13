@@ -28,7 +28,6 @@ spring:
         enabled: false
     listener:
       simple:
-        acknowledge-mode: manual
         default-requeue-rejected: false
         prefetch: 20
         concurrency: 2

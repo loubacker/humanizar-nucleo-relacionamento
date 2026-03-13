@@ -65,36 +65,39 @@ public class OutboxEventProcessor {
             return;
         }
 
-        try {
-            rabbitOutboxPublisher.publish(event);
+        OutboxEvent processingEvent = fresh;
 
-            event.setStatus(OutboxStatus.PUBLISHED);
-            event.setPublishedAt(LocalDateTime.now());
-            event.setLastError(null);
-            event.setLockedBy(null);
-            outboxEventPort.save(event);
+        try {
+            rabbitOutboxPublisher.publish(processingEvent);
+
+            processingEvent.setStatus(OutboxStatus.PUBLISHED);
+            processingEvent.setPublishedAt(LocalDateTime.now());
+            processingEvent.setLastError(null);
+            processingEvent.setLockedBy(null);
+            outboxEventPort.save(processingEvent);
 
         } catch (Exception ex) {
-            int newAttemptCount = Objects.requireNonNullElse(event.getAttemptCount(), 0) + 1;
-            event.setAttemptCount(newAttemptCount);
-            event.setLastError(ex.getClass().getSimpleName() + ": " + ex.getMessage());
+            int newAttemptCount = Objects.requireNonNullElse(processingEvent.getAttemptCount(), 0) + 1;
+            processingEvent.setAttemptCount(newAttemptCount);
+            processingEvent.setLastError(ex.getClass().getSimpleName() + ": " + ex.getMessage());
 
             int maxAttempts = Objects.requireNonNullElse(
-                    event.getMaxAttempts(), retryPolicy.getDefaultMaxAttempts());
+                    processingEvent.getMaxAttempts(), retryPolicy.getDefaultMaxAttempts());
 
             if (retryPolicy.isExhausted(newAttemptCount, maxAttempts)) {
-                event.setStatus(OutboxStatus.DEAD);
+                processingEvent.setStatus(OutboxStatus.DEAD);
                 log.error("Evento movido para DEAD apos {} tentativas. eventId={}",
-                        newAttemptCount, event.getEventId(), ex);
+                        newAttemptCount, processingEvent.getEventId(), ex);
             } else {
-                event.setStatus(OutboxStatus.FAILED);
-                event.setNextRetryAt(retryPolicy.nextRetryAt(newAttemptCount));
+                processingEvent.setStatus(OutboxStatus.FAILED);
+                processingEvent.setNextRetryAt(retryPolicy.nextRetryAt(newAttemptCount));
                 log.warn("Falha ao publicar evento. attempt={}/{}, nextRetry={}, eventId={}",
-                        newAttemptCount, maxAttempts, event.getNextRetryAt(), event.getEventId(), ex);
+                        newAttemptCount, maxAttempts, processingEvent.getNextRetryAt(),
+                        processingEvent.getEventId(), ex);
             }
 
-            event.setLockedBy(null);
-            outboxEventPort.save(event);
+            processingEvent.setLockedBy(null);
+            outboxEventPort.save(processingEvent);
         }
     }
 }

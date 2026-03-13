@@ -14,11 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.humanizar.nucleorelacionamento.application.dto.NucleoPatientDTO;
 import com.humanizar.nucleorelacionamento.application.dto.ResponsavelDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.catalog.ExchangeCatalog;
 import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingKeyCatalog;
-import com.humanizar.nucleorelacionamento.application.messaging.outbound.event.NucleoPatientPayload;
-import com.humanizar.nucleorelacionamento.application.messaging.outbound.event.ResponsavelDesvinculadoEvent;
-import com.humanizar.nucleorelacionamento.application.messaging.outbound.event.ResponsavelPayload;
-import com.humanizar.nucleorelacionamento.application.messaging.outbound.event.ResponsavelVinculadoEvent;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundEnvelopeDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundNucleoPatientDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelDesvinculadoDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundNucleoResponsavelDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelVinculadoDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper.OutboundResponsavelDesvinculadoMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper.OutboundResponsavelVinculadoMapper;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.OutboxEventPublisher;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.NucleoPatient;
@@ -33,20 +37,27 @@ import com.humanizar.nucleorelacionamento.domain.port.NucleoPatientResponsavelPo
 public class NucleoPatientService {
 
         private static final Logger log = LoggerFactory.getLogger(NucleoPatientService.class);
+        private static final String AGGREGATE_TYPE = "nucleo_patient";
 
         private final NucleoPatientPort nucleoPatientPort;
         private final NucleoPatientResponsavelPort responsavelPort;
         private final AbordagemPatientPort abordagemPatientPort;
         private final OutboxEventPublisher outboxEventPublisher;
+        private final OutboundResponsavelVinculadoMapper outboundResponsavelVinculadoMapper;
+        private final OutboundResponsavelDesvinculadoMapper outboundResponsavelDesvinculadoMapper;
 
         public NucleoPatientService(NucleoPatientPort nucleoPatientPort,
                         NucleoPatientResponsavelPort responsavelPort,
                         AbordagemPatientPort abordagemPatientPort,
-                        OutboxEventPublisher outboxEventPublisher) {
+                        OutboxEventPublisher outboxEventPublisher,
+                        OutboundResponsavelVinculadoMapper outboundResponsavelVinculadoMapper,
+                        OutboundResponsavelDesvinculadoMapper outboundResponsavelDesvinculadoMapper) {
                 this.nucleoPatientPort = nucleoPatientPort;
                 this.responsavelPort = responsavelPort;
                 this.abordagemPatientPort = abordagemPatientPort;
                 this.outboxEventPublisher = outboxEventPublisher;
+                this.outboundResponsavelVinculadoMapper = outboundResponsavelVinculadoMapper;
+                this.outboundResponsavelDesvinculadoMapper = outboundResponsavelDesvinculadoMapper;
         }
 
         @Transactional
@@ -255,15 +266,24 @@ public class NucleoPatientService {
                         List<NucleoPatientResponsavel> responsaveis,
                         UUID aggregateId, UUID correlationId,
                         UUID actorId, String userAgent, String originIp) {
-                List<ResponsavelPayload> payloads = responsaveis.stream()
-                                .map(r -> new ResponsavelPayload(r.getResponsavelId(), r.getRole().name()))
+                UUID eventId = UUID.randomUUID();
+                List<OutboundNucleoResponsavelDTO> payloads = responsaveis.stream()
+                                .map(r -> new OutboundNucleoResponsavelDTO(r.getResponsavelId(), r.getRole().name()))
                                 .toList();
-                NucleoPatientPayload nucleoPayload = new NucleoPatientPayload(nucleoId, payloads);
-                ResponsavelVinculadoEvent event = new ResponsavelVinculadoEvent(
+                OutboundNucleoPatientDTO nucleoPayload = new OutboundNucleoPatientDTO(nucleoId, payloads);
+                OutboundResponsavelVinculadoDTO payload = new OutboundResponsavelVinculadoDTO(
                                 patientId, List.of(nucleoPayload));
+                OutboundEnvelopeDTO<OutboundResponsavelVinculadoDTO> envelope = outboundResponsavelVinculadoMapper
+                                .toEnvelope(eventId, correlationId, actorId, userAgent, originIp, payload);
 
-                outboxEventPublisher.publish(RoutingKeyCatalog.RESPONSAVEL_VINCULADO_V1,
-                                aggregateId, correlationId, event,
+                outboxEventPublisher.publish(
+                                ExchangeCatalog.NUCLEO_RELACIONAMENTO_EVENT,
+                                RoutingKeyCatalog.RESPONSAVEL_VINCULADO_V1,
+                                AGGREGATE_TYPE,
+                                aggregateId,
+                                eventId,
+                                correlationId,
+                                envelope,
                                 actorId, userAgent, originIp);
         }
 
@@ -281,15 +301,24 @@ public class NucleoPatientService {
                         List<NucleoPatientResponsavel> responsaveis,
                         UUID aggregateId, UUID correlationId,
                         UUID actorId, String userAgent, String originIp) {
-                List<ResponsavelPayload> payloads = responsaveis.stream()
-                                .map(r -> new ResponsavelPayload(r.getResponsavelId(), r.getRole().name()))
+                UUID eventId = UUID.randomUUID();
+                List<OutboundNucleoResponsavelDTO> payloads = responsaveis.stream()
+                                .map(r -> new OutboundNucleoResponsavelDTO(r.getResponsavelId(), r.getRole().name()))
                                 .toList();
-                NucleoPatientPayload nucleoPayload = new NucleoPatientPayload(nucleoId, payloads);
-                ResponsavelDesvinculadoEvent event = new ResponsavelDesvinculadoEvent(
+                OutboundNucleoPatientDTO nucleoPayload = new OutboundNucleoPatientDTO(nucleoId, payloads);
+                OutboundResponsavelDesvinculadoDTO payload = new OutboundResponsavelDesvinculadoDTO(
                                 patientId, List.of(nucleoPayload));
+                OutboundEnvelopeDTO<OutboundResponsavelDesvinculadoDTO> envelope = outboundResponsavelDesvinculadoMapper
+                                .toEnvelope(eventId, correlationId, actorId, userAgent, originIp, payload);
 
-                outboxEventPublisher.publish(RoutingKeyCatalog.RESPONSAVEL_DESVINCULADO_V1,
-                                aggregateId, correlationId, event,
+                outboxEventPublisher.publish(
+                                ExchangeCatalog.NUCLEO_RELACIONAMENTO_EVENT,
+                                RoutingKeyCatalog.RESPONSAVEL_DESVINCULADO_V1,
+                                AGGREGATE_TYPE,
+                                aggregateId,
+                                eventId,
+                                correlationId,
+                                envelope,
                                 actorId, userAgent, originIp);
         }
 }

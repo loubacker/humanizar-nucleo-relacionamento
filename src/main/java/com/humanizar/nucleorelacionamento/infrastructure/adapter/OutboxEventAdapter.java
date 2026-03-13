@@ -27,7 +27,7 @@ public class OutboxEventAdapter implements OutboxEventPort {
     }
 
     @Override
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.REQUIRED)
     public OutboxEvent save(OutboxEvent outboxEvent) {
         OutboxEventEntity entity = toEntity(outboxEvent);
         OutboxEventEntity saved = outboxEventRepository.save(entity);

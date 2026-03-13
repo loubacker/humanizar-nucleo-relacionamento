@@ -15,8 +15,10 @@ public final class RoutingKeyCatalog {
     // Outbound — nucleo-relacionamento
     public static final String RESPONSAVEL_VINCULADO_V1 = "ev.nucleo.responsavel.vinculado.v1";
     public static final String RESPONSAVEL_DESVINCULADO_V1 = "ev.nucleo.responsavel.desvinculado.v1";
-    public static final String ACOLHIMENTO_PROCESSED_V1 = "ev.nucleo-relacionamento.acolhimento.processed.v1";
-    public static final String ACOLHIMENTO_REJECTED_V1 = "ev.nucleo-relacionamento.acolhimento.rejected.v1";
+
+    // Outbound de Callbacks
+    public static final String ACOLHIMENTO_PROCESSED_V1 = "ev.acolhimento.nucleo-relacionamento.processed.v1";
+    public static final String ACOLHIMENTO_REJECTED_V1 = "ev.acolhimento.nucleo-relacionamento.rejected.v1";
     public static final String PROGRAMA_PROCESSED_V1 = "ev.nucleo-relacionamento.programa.processed.v1";
     public static final String PROGRAMA_REJECTED_V1 = "ev.nucleo-relacionamento.programa.rejected.v1";
 
