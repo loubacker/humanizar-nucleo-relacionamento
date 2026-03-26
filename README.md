@@ -3,7 +3,7 @@
   <p>Gestão do relacionamento entre Núcleo e Paciente no ecossistema Humanizar.</p>
 
   <img alt="Java" src="https://img.shields.io/badge/Java-25-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" />
-  <img alt="Spring Boot" src="https://img.shields.io/badge/Spring_Boot-4.0.3-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" />
+  <img alt="Spring Boot" src="https://img.shields.io/badge/Spring_Boot-4.0.4-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white" />
   <img alt="GraalVM" src="https://img.shields.io/badge/GraalVM_Native-25-E76F00?style=for-the-badge&logo=oracle&logoColor=white" />
   <img alt="RabbitMQ" src="https://img.shields.io/badge/RabbitMQ-%23FF6600.svg?style=for-the-badge&logo=rabbitmq&logoColor=white" />
   <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white" />
@@ -56,8 +56,8 @@ Contrato publicado: `OutboundEnvelopeDTO<T>` (metadados + payload).
 - `ev.acolhimento.nucleo-relacionamento.rejected.v1`
 
 **Exchange `humanizar.programa.event`**
-- `ev.nucleo-relacionamento.programa.processed.v1`
-- `ev.nucleo-relacionamento.programa.rejected.v1`
+- `ev.programa.nucleo-relacionamento.processed.v1`
+- `ev.programa.nucleo-relacionamento.rejected.v1`
 
 Contrato publicado: `CallbackDTO`.
 
@@ -77,12 +77,12 @@ Implementação central: `RabbitAcknowledgementConfig`.
 ### DLQ
 
 Filas principais:
-- `humanizar-nucleo-relacionamento.acolhimento`
-- `humanizar-nucleo-relacionamento.programa`
+- `humanizar.nucleo-relacionamento.acolhimento`
+- `humanizar.nucleo-relacionamento.programa`
 
 Filas de dead letter:
-- `humanizar-nucleo-relacionamento.acolhimento.dlq`
-- `humanizar-nucleo-relacionamento.programa.dlq`
+- `humanizar.nucleo-relacionamento.acolhimento.dlq`
+- `humanizar.nucleo-relacionamento.programa.dlq`
 
 ### Idempotência
 
