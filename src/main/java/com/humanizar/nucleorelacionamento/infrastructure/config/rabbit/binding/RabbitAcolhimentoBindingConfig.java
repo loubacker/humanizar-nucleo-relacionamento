@@ -37,6 +37,6 @@ public class RabbitAcolhimentoBindingConfig {
                         TopicExchange acolhimentoExchange) {
                 return BindingBuilder.bind(nucleoRelacionamentoAcolhimentoQueue)
                                 .to(acolhimentoExchange)
-                                .with(RoutingKeyCatalog.ACOLHIMENTO_DELETED_V1);
+                                .with(RoutingKeyCatalog.ACOLHIMENTO_DELETED_V2);
         }
 }

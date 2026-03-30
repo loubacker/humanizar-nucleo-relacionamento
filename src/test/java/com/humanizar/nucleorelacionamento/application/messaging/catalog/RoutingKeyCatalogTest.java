@@ -26,7 +26,7 @@ class RoutingKeyCatalogTest {
     void shouldIdentifyAcolhimentoInboundKeys() {
         Assertions.assertTrue(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.ACOLHIMENTO_CREATED_V1));
         Assertions.assertTrue(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.ACOLHIMENTO_UPDATED_V1));
-        Assertions.assertTrue(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.ACOLHIMENTO_DELETED_V1));
+        Assertions.assertTrue(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.ACOLHIMENTO_DELETED_V2));
         Assertions.assertFalse(RoutingKeyCatalog.isAcolhimentoInbound(RoutingKeyCatalog.PROGRAMA_CREATED_V1));
     }
 

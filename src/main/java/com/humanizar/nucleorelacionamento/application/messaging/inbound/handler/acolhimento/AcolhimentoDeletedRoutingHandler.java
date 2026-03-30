@@ -25,7 +25,7 @@ public class AcolhimentoDeletedRoutingHandler implements AcolhimentoRoutingHandl
 
     @Override
     public String routingKey() {
-        return RoutingKeyCatalog.ACOLHIMENTO_DELETED_V1;
+        return RoutingKeyCatalog.ACOLHIMENTO_DELETED_V2;
     }
 
     @Override

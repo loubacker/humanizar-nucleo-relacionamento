@@ -4,20 +4,15 @@ import java.time.LocalDateTime;
 import java.util.Objects;
 import java.util.UUID;
 
+import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
-import jakarta.persistence.Table;
-import jakarta.persistence.UniqueConstraint;
-
 @Entity
 @Table(name = "nucleo_patient", uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "patient_id", "nucleo_id" })
+        @UniqueConstraint(name = "uk_patient_nucleo", columnNames = { "patient_id", "nucleo_id" })
+}, indexes = {
+        @Index(name = "idx_nucleo_patient", columnList = "patient_id")
 })
 public class NucleoPatientEntity {
 

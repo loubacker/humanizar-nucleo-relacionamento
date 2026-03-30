@@ -5,7 +5,7 @@ public final class RoutingKeyCatalog {
     // Inbound — acolhimento
     public static final String ACOLHIMENTO_CREATED_V1 = "cmd.acolhimento.created.v1";
     public static final String ACOLHIMENTO_UPDATED_V1 = "cmd.acolhimento.updated.v1";
-    public static final String ACOLHIMENTO_DELETED_V1 = "cmd.acolhimento.deleted.v1";
+    public static final String ACOLHIMENTO_DELETED_V2 = "cmd.acolhimento.deleted.v2";
 
     // Inbound — programa
     public static final String PROGRAMA_CREATED_V1 = "cmd.programa.created.v1";
@@ -27,7 +27,7 @@ public final class RoutingKeyCatalog {
     public static boolean isAcolhimentoInbound(String routingKey) {
         return ACOLHIMENTO_CREATED_V1.equals(routingKey)
                 || ACOLHIMENTO_UPDATED_V1.equals(routingKey)
-                || ACOLHIMENTO_DELETED_V1.equals(routingKey);
+                || ACOLHIMENTO_DELETED_V2.equals(routingKey);
     }
 
     public static boolean isProgramaInbound(String routingKey) {
