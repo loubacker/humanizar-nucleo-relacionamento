@@ -39,7 +39,6 @@ class AcolhimentoCreatedUseCaseTest {
     private AcolhimentoCreatedUseCase useCase;
 
     @BeforeEach
-    @SuppressWarnings("unused")
     void setUp() {
         useCase = new AcolhimentoCreatedUseCase(nucleoPatientService, processedEventPort);
     }

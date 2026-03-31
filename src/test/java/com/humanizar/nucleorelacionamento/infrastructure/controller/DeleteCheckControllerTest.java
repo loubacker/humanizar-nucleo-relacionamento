@@ -33,7 +33,6 @@ class DeleteCheckControllerTest {
     private MockMvc mockMvc;
 
     @BeforeEach
-    @SuppressWarnings("unused")
     void setUp() {
         CheckController controller = new CheckController(deleteCheckService);
         mockMvc = MockMvcBuilders.standaloneSetup(controller)

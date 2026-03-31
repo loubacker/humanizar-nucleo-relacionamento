@@ -1,14 +1,35 @@
 package com.humanizar.nucleorelacionamento.infrastructure.config;
 
+import org.springframework.aot.hint.MemberCategory;
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ImportRuntimeHints;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.humanizar.nucleorelacionamento.application.dto.BlockedNucleoDTO;
+import com.humanizar.nucleorelacionamento.application.dto.DeleteCheckResponseDTO;
+import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
+import com.humanizar.nucleorelacionamento.application.dto.NucleoPatientDTO;
+import com.humanizar.nucleorelacionamento.application.dto.ResponsavelDTO;
+import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoCreatedDTO;
+import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoDeletedDTO;
+import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoUpdatedDTO;
+import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDTO;
+import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDeletedDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.CallbackDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundEnvelopeDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundNucleoPatientDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundNucleoResponsavelDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelDesvinculadoDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelVinculadoDTO;
 
 @Configuration
+@ImportRuntimeHints(ObjectMapperConfig.ObjectMapperRuntimeHints.class)
 public class ObjectMapperConfig {
 
     @Bean
@@ -18,5 +39,32 @@ public class ObjectMapperConfig {
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         return mapper;
+    }
+
+    public static class ObjectMapperRuntimeHints implements RuntimeHintsRegistrar {
+
+        @Override
+        public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+            registerJsonBinding(hints, InboundEnvelopeDTO.class);
+            registerJsonBinding(hints, NucleoPatientDTO.class);
+            registerJsonBinding(hints, ResponsavelDTO.class);
+            registerJsonBinding(hints, BlockedNucleoDTO.class);
+            registerJsonBinding(hints, DeleteCheckResponseDTO.class);
+            registerJsonBinding(hints, AcolhimentoCreatedDTO.class);
+            registerJsonBinding(hints, AcolhimentoUpdatedDTO.class);
+            registerJsonBinding(hints, AcolhimentoDeletedDTO.class);
+            registerJsonBinding(hints, ProgramaDTO.class);
+            registerJsonBinding(hints, ProgramaDeletedDTO.class);
+            registerJsonBinding(hints, CallbackDTO.class);
+            registerJsonBinding(hints, OutboundEnvelopeDTO.class);
+            registerJsonBinding(hints, OutboundNucleoPatientDTO.class);
+            registerJsonBinding(hints, OutboundNucleoResponsavelDTO.class);
+            registerJsonBinding(hints, OutboundResponsavelVinculadoDTO.class);
+            registerJsonBinding(hints, OutboundResponsavelDesvinculadoDTO.class);
+        }
+
+        private void registerJsonBinding(RuntimeHints hints, Class<?> type) {
+            hints.reflection().registerType(type, MemberCategory.values());
+        }
     }
 }

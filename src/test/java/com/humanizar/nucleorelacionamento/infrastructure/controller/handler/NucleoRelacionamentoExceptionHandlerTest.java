@@ -19,7 +19,6 @@ class NucleoRelacionamentoExceptionHandlerTest {
     private MockMvc mockMvc;
 
     @BeforeEach
-    @SuppressWarnings("unused")
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new ThrowingController())
                 .setControllerAdvice(new NucleoRelacionamentoExceptionHandler())
@@ -52,7 +51,6 @@ class NucleoRelacionamentoExceptionHandlerTest {
     static class ThrowingController {
 
         @GetMapping("/test/advice")
-        @SuppressWarnings("unused")
         String fail() {
             throw new NucleoRelacionamentoException(
                     ReasonCode.HAS_ABORDAGEM,
@@ -61,7 +59,6 @@ class NucleoRelacionamentoExceptionHandlerTest {
         }
 
         @GetMapping("/test/advice/fallback")
-        @SuppressWarnings("unused")
         String failFallback() {
             throw new NucleoRelacionamentoException(
                     null,
