@@ -45,6 +45,17 @@ public class NucleoPatientResponsavelAdapter implements NucleoPatientResponsavel
     }
 
     @Override
+    public List<NucleoPatientResponsavel> findAllResponsaveisByNucleoPatientId(List<UUID> nucleoPatientIds) {
+        if (nucleoPatientIds == null || nucleoPatientIds.isEmpty()) {
+            return List.of();
+        }
+
+        return nucleoPatientResponsavelRepository.findByNucleoPatientIdIn(nucleoPatientIds).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public void deleteByNucleoPatientId(UUID nucleoPatientId) {
         nucleoPatientResponsavelRepository.deleteByNucleoPatientId(nucleoPatientId);
     }
@@ -60,7 +71,7 @@ public class NucleoPatientResponsavelAdapter implements NucleoPatientResponsavel
     private NucleoPatientResponsavelEntity toEntity(NucleoPatientResponsavel domain) {
         UUID nucleoPatientId = Objects.requireNonNull(
                 domain.getNucleoPatientId(),
-                "nucleoPatientId é obrigatório para persistir NucleoPatientResponsavel");
+                "nucleoPatientId e obrigatorio para persistir NucleoPatientResponsavel");
 
         NucleoPatientResponsavelEntity entity = new NucleoPatientResponsavelEntity();
         entity.setId(domain.getId());

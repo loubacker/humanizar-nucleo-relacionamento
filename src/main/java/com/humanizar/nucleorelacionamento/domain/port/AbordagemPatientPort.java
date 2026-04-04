@@ -13,5 +13,7 @@ public interface AbordagemPatientPort {
 
     List<AbordagemPatient> findByNucleoPatientId(UUID nucleoPatientId);
 
+    List<AbordagemPatient> findAllAbordagensByNucleoPatientId(List<UUID> nucleoPatientIds);
+
     void deleteByNucleoPatientId(UUID nucleoPatientId);
 }

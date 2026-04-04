@@ -1,12 +1,11 @@
 package com.humanizar.nucleorelacionamento.infrastructure.controller.handler;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,6 +18,7 @@ class NucleoRelacionamentoExceptionHandlerTest {
     private MockMvc mockMvc;
 
     @BeforeEach
+    @SuppressWarnings("unused")
     void setUp() {
         mockMvc = MockMvcBuilders.standaloneSetup(new ThrowingController())
                 .setControllerAdvice(new NucleoRelacionamentoExceptionHandler())
@@ -51,6 +51,7 @@ class NucleoRelacionamentoExceptionHandlerTest {
     static class ThrowingController {
 
         @GetMapping("/test/advice")
+        @SuppressWarnings("unused")
         String fail() {
             throw new NucleoRelacionamentoException(
                     ReasonCode.HAS_ABORDAGEM,
@@ -59,6 +60,7 @@ class NucleoRelacionamentoExceptionHandlerTest {
         }
 
         @GetMapping("/test/advice/fallback")
+        @SuppressWarnings("unused")
         String failFallback() {
             throw new NucleoRelacionamentoException(
                     null,

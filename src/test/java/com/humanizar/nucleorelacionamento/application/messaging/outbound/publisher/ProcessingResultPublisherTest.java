@@ -35,6 +35,7 @@ class ProcessingResultPublisherTest {
     private ArgumentCaptor<Object> payloadCaptor;
 
     @BeforeEach
+    @SuppressWarnings("unused")
     void setUp() {
         processingResultPublisher = new ProcessingResultPublisher(
                 outboxEventPublisher,

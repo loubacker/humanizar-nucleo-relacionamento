@@ -13,5 +13,7 @@ public interface AbordagemPatientRepository extends JpaRepository<AbordagemPatie
 
     List<AbordagemPatientEntity> findByNucleoPatientId(UUID nucleoPatientId);
 
+    List<AbordagemPatientEntity> findByNucleoPatientIdIn(List<UUID> nucleoPatientIds);
+
     void deleteByNucleoPatientId(UUID nucleoPatientId);
 }

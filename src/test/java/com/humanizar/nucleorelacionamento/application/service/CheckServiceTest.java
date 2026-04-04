@@ -1,21 +1,18 @@
 package com.humanizar.nucleorelacionamento.application.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
-
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.humanizar.nucleorelacionamento.application.dto.DeleteCheckResponseDTO;
-import com.humanizar.nucleorelacionamento.application.mapper.DeleteCheckMapper;
+import com.humanizar.nucleorelacionamento.application.dto.CheckResponseDTO;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.AbordagemPatient;
 import com.humanizar.nucleorelacionamento.domain.model.NucleoPatient;
@@ -24,7 +21,7 @@ import com.humanizar.nucleorelacionamento.domain.port.AbordagemPatientPort;
 import com.humanizar.nucleorelacionamento.domain.port.NucleoPatientPort;
 
 @ExtendWith(MockitoExtension.class)
-class DeleteCheckServiceTest {
+class CheckServiceTest {
 
     @Mock
     private NucleoPatientPort nucleoPatientPort;
@@ -32,18 +29,15 @@ class DeleteCheckServiceTest {
     @Mock
     private AbordagemPatientPort abordagemPatientPort;
 
-    @Spy
-    private DeleteCheckMapper deleteCheckMapper;
-
     @InjectMocks
-    private DeleteCheckService service;
+    private CheckService service;
 
     @Test
     void shouldReturnAllowedWhenPatientHasNoNucleos() {
         UUID patientId = UUID.randomUUID();
         when(nucleoPatientPort.findAllByPatientId(patientId)).thenReturn(List.of());
 
-        DeleteCheckResponseDTO response = service.checkDeleteStatusByPatientId(patientId);
+        CheckResponseDTO response = service.checkDeleteStatusByPatientId(patientId);
 
         assertEquals(true, response.canDelete());
         assertEquals(List.of(), response.blockedNucleos());
@@ -64,7 +58,7 @@ class DeleteCheckServiceTest {
         when(nucleoPatientPort.findAllByPatientId(patientId)).thenReturn(List.of(nucleo));
         when(abordagemPatientPort.findByNucleoPatientId(nucleoPatientId)).thenReturn(List.of());
 
-        DeleteCheckResponseDTO response = service.checkDeleteStatusByPatientId(patientId);
+        CheckResponseDTO response = service.checkDeleteStatusByPatientId(patientId);
 
         assertEquals(true, response.canDelete());
         assertEquals(List.of(), response.blockedNucleos());
@@ -89,7 +83,7 @@ class DeleteCheckServiceTest {
         when(nucleoPatientPort.findAllByPatientId(patientId)).thenReturn(List.of(nucleo));
         when(abordagemPatientPort.findByNucleoPatientId(nucleoPatientId)).thenReturn(abordagens);
 
-        DeleteCheckResponseDTO response = service.checkDeleteStatusByPatientId(patientId);
+        CheckResponseDTO response = service.checkDeleteStatusByPatientId(patientId);
 
         assertEquals(false, response.canDelete());
         assertEquals(ReasonCode.HAS_ABORDAGEM.name(), response.reasonCode());

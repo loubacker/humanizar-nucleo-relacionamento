@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.humanizar.nucleorelacionamento.application.dto.BlockedNucleoDTO;
-import com.humanizar.nucleorelacionamento.application.dto.DeleteCheckResponseDTO;
+import com.humanizar.nucleorelacionamento.application.dto.CheckResponseDTO;
 import com.humanizar.nucleorelacionamento.application.dto.InboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.dto.NucleoPatientDTO;
 import com.humanizar.nucleorelacionamento.application.dto.ResponsavelDTO;
@@ -21,12 +21,15 @@ import com.humanizar.nucleorelacionamento.application.dto.acolhimento.Acolhiment
 import com.humanizar.nucleorelacionamento.application.dto.acolhimento.AcolhimentoUpdatedDTO;
 import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDTO;
 import com.humanizar.nucleorelacionamento.application.dto.programa.ProgramaDeletedDTO;
+import com.humanizar.nucleorelacionamento.application.dto.retrieve.NucleoRelacionamentoDTO;
+import com.humanizar.nucleorelacionamento.application.dto.retrieve.NucleoRelacionamentoRetrieveDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.CallbackDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundNucleoPatientDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundNucleoResponsavelDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelDesvinculadoDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelVinculadoDTO;
+import com.humanizar.nucleorelacionamento.infrastructure.controller.dto.NucleoRelacionamentoErrorResponseDTO;
 
 @Configuration
 @ImportRuntimeHints(ObjectMapperConfig.ObjectMapperRuntimeHints.class)
@@ -49,12 +52,15 @@ public class ObjectMapperConfig {
             registerJsonBinding(hints, NucleoPatientDTO.class);
             registerJsonBinding(hints, ResponsavelDTO.class);
             registerJsonBinding(hints, BlockedNucleoDTO.class);
-            registerJsonBinding(hints, DeleteCheckResponseDTO.class);
+            registerJsonBinding(hints, CheckResponseDTO.class);
             registerJsonBinding(hints, AcolhimentoCreatedDTO.class);
             registerJsonBinding(hints, AcolhimentoUpdatedDTO.class);
             registerJsonBinding(hints, AcolhimentoDeletedDTO.class);
             registerJsonBinding(hints, ProgramaDTO.class);
             registerJsonBinding(hints, ProgramaDeletedDTO.class);
+            registerJsonBinding(hints, NucleoRelacionamentoDTO.class);
+            registerJsonBinding(hints, NucleoRelacionamentoRetrieveDTO.class);
+            registerJsonBinding(hints, NucleoRelacionamentoErrorResponseDTO.class);
             registerJsonBinding(hints, CallbackDTO.class);
             registerJsonBinding(hints, OutboundEnvelopeDTO.class);
             registerJsonBinding(hints, OutboundNucleoPatientDTO.class);

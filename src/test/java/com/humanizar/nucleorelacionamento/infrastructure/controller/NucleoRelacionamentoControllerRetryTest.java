@@ -21,14 +21,14 @@ import org.springframework.resilience.annotation.EnableResilientMethods;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import com.humanizar.nucleorelacionamento.application.dto.CheckResponseDTO;
-import com.humanizar.nucleorelacionamento.application.service.CheckService;
+import com.humanizar.nucleorelacionamento.application.dto.retrieve.NucleoRelacionamentoRetrieveDTO;
+import com.humanizar.nucleorelacionamento.application.service.NucleoRelacionamentoService;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
 
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = DeleteCheckControllerRetryTest.TestConfig.class)
-class DeleteCheckControllerRetryTest {
+@ContextConfiguration(classes = NucleoRelacionamentoControllerRetryTest.TestConfig.class)
+class NucleoRelacionamentoControllerRetryTest {
 
     @Configuration(proxyBeanMethods = false)
     @EnableResilientMethods
@@ -36,73 +36,72 @@ class DeleteCheckControllerRetryTest {
 
         @Bean
         @SuppressWarnings("unused")
-        CheckService deleteCheckService() {
-            return mock(CheckService.class);
+        NucleoRelacionamentoService nucleoRelacionamentoService() {
+            return mock(NucleoRelacionamentoService.class);
         }
 
         @Bean
         @SuppressWarnings("unused")
-        CheckController deleteCheckController(CheckService service) {
-            return new CheckController(service);
+        NucleoRelacionamentoController nucleoRelacionamentoController(NucleoRelacionamentoService service) {
+            return new NucleoRelacionamentoController(service);
         }
     }
 
     @Autowired
-    private CheckController controller;
+    private NucleoRelacionamentoController controller;
 
     @Autowired
-    private CheckService service;
+    private NucleoRelacionamentoService service;
 
     @Test
     void shouldReturn200WithoutRetryWhenSuccessOnFirstAttempt() {
         UUID patientId = UUID.fromString("1ec11c04-3453-4a8c-b174-dac37a3236cf");
-        CheckResponseDTO payload = allowedPayload();
+        NucleoRelacionamentoRetrieveDTO payload = retrievePayload(patientId);
 
-        when(service.checkDeleteStatusByPatientId(patientId)).thenReturn(payload);
+        when(service.findByPatientId(patientId)).thenReturn(payload);
 
-        ResponseEntity<CheckResponseDTO> response = controller.checkDeleteStatus(patientId);
+        ResponseEntity<NucleoRelacionamentoRetrieveDTO> response = controller.retrieve(patientId);
 
         assertEquals(200, response.getStatusCode().value());
         assertEquals(payload, response.getBody());
-        verify(service, times(1)).checkDeleteStatusByPatientId(patientId);
+        verify(service, times(1)).findByPatientId(patientId);
     }
 
     @Test
     void shouldRetryTransientFailureAndSucceedOnThirdAttempt() {
         UUID patientId = UUID.fromString("23751f6b-c38f-473a-a32d-af4ebf1fbcdf");
-        CheckResponseDTO payload = allowedPayload();
+        NucleoRelacionamentoRetrieveDTO payload = retrievePayload(patientId);
 
-        when(service.checkDeleteStatusByPatientId(patientId))
+        when(service.findByPatientId(patientId))
                 .thenThrow(new TransientDataAccessResourceException("temporary failure 1"))
                 .thenThrow(new TransientDataAccessResourceException("temporary failure 2"))
                 .thenReturn(payload);
 
-        ResponseEntity<CheckResponseDTO> response = controller.checkDeleteStatus(patientId);
+        ResponseEntity<NucleoRelacionamentoRetrieveDTO> response = controller.retrieve(patientId);
 
         assertEquals(200, response.getStatusCode().value());
-        assertTrue(response.getBody().canDelete());
-        verify(service, times(3)).checkDeleteStatusByPatientId(patientId);
+        assertTrue(response.getBody().nucleoPatient().isEmpty());
+        verify(service, times(3)).findByPatientId(patientId);
     }
 
     @Test
     void shouldNotRetryForDomainException() {
         UUID patientId = UUID.fromString("91f7868f-2408-4132-9c79-8c2ecbc6fe96");
         NucleoRelacionamentoException exception = new NucleoRelacionamentoException(
-                ReasonCode.VALIDATION_ERROR,
-                null,
-                "patientId e obrigatorio");
+                ReasonCode.PATIENT_NOT_FOUND,
+                null);
 
-        when(service.checkDeleteStatusByPatientId(patientId)).thenThrow(exception);
+        when(service.findByPatientId(patientId)).thenThrow(exception);
 
         NucleoRelacionamentoException thrown = assertThrows(
                 NucleoRelacionamentoException.class,
-                () -> controller.checkDeleteStatus(patientId));
+                () -> controller.retrieve(patientId));
 
-        assertEquals(ReasonCode.VALIDATION_ERROR, thrown.getReasonCode());
-        verify(service, times(1)).checkDeleteStatusByPatientId(patientId);
+        assertEquals(ReasonCode.PATIENT_NOT_FOUND, thrown.getReasonCode());
+        verify(service, times(1)).findByPatientId(patientId);
     }
 
-    private CheckResponseDTO allowedPayload() {
-        return new CheckResponseDTO(true, null, null, List.of());
+    private NucleoRelacionamentoRetrieveDTO retrievePayload(UUID patientId) {
+        return new NucleoRelacionamentoRetrieveDTO(patientId, List.of());
     }
 }

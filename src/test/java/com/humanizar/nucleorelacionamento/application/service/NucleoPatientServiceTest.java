@@ -1,23 +1,21 @@
 package com.humanizar.nucleorelacionamento.application.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.humanizar.nucleorelacionamento.application.dto.NucleoPatientDTO;
@@ -27,8 +25,6 @@ import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingK
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelDesvinculadoDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelVinculadoDTO;
-import com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper.OutboundResponsavelDesvinculadoMapper;
-import com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper.OutboundResponsavelVinculadoMapper;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.OutboxEventPublisher;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.NucleoPatient;
@@ -53,12 +49,6 @@ class NucleoPatientServiceTest {
 
     @Mock
     private OutboxEventPublisher outboxEventPublisher;
-
-    @Spy
-    private OutboundResponsavelVinculadoMapper outboundResponsavelVinculadoMapper;
-
-    @Spy
-    private OutboundResponsavelDesvinculadoMapper outboundResponsavelDesvinculadoMapper;
 
     @InjectMocks
     private NucleoPatientService service;
@@ -105,8 +95,8 @@ class NucleoPatientServiceTest {
                 any());
 
         @SuppressWarnings("unchecked")
-        OutboundEnvelopeDTO<OutboundResponsavelVinculadoDTO> envelope =
-                (OutboundEnvelopeDTO<OutboundResponsavelVinculadoDTO>) payloadCaptor.getValue();
+        OutboundEnvelopeDTO<OutboundResponsavelVinculadoDTO> envelope = (OutboundEnvelopeDTO<OutboundResponsavelVinculadoDTO>) payloadCaptor
+                .getValue();
         assertEquals(eventIdCaptor.getValue(), envelope.eventId());
         assertEquals(correlationId, envelope.correlationId());
         assertEquals("humanizar-nucleo-relacionamento", envelope.producerService());
@@ -208,8 +198,8 @@ class NucleoPatientServiceTest {
                 any());
 
         @SuppressWarnings("unchecked")
-        OutboundEnvelopeDTO<OutboundResponsavelDesvinculadoDTO> envelope =
-                (OutboundEnvelopeDTO<OutboundResponsavelDesvinculadoDTO>) payloadCaptor.getValue();
+        OutboundEnvelopeDTO<OutboundResponsavelDesvinculadoDTO> envelope = (OutboundEnvelopeDTO<OutboundResponsavelDesvinculadoDTO>) payloadCaptor
+                .getValue();
         assertEquals(eventIdCaptor.getValue(), envelope.eventId());
         assertEquals(correlationId, envelope.correlationId());
         assertEquals("humanizar-nucleo-relacionamento", envelope.producerService());

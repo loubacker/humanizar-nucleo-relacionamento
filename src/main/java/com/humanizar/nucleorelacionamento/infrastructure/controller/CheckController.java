@@ -10,8 +10,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.humanizar.nucleorelacionamento.application.dto.DeleteCheckResponseDTO;
-import com.humanizar.nucleorelacionamento.application.service.DeleteCheckService;
+import com.humanizar.nucleorelacionamento.application.dto.CheckResponseDTO;
+import com.humanizar.nucleorelacionamento.application.service.CheckService;
 import com.humanizar.nucleorelacionamento.infrastructure.config.ResilientMethodsConfig.Retry;
 
 @RestController
@@ -20,17 +20,17 @@ public class CheckController {
 
     private static final Logger log = LoggerFactory.getLogger(CheckController.class);
 
-    private final DeleteCheckService deleteCheckService;
+    private final CheckService checkService;
 
-    public CheckController(DeleteCheckService deleteCheckService) {
-        this.deleteCheckService = deleteCheckService;
+    public CheckController(CheckService checkService) {
+        this.checkService = checkService;
     }
 
     @Retry
     @GetMapping("/check/{patientId}")
-    public ResponseEntity<DeleteCheckResponseDTO> checkDeleteStatus(@PathVariable UUID patientId) {
+    public ResponseEntity<CheckResponseDTO> checkDeleteStatus(@PathVariable UUID patientId) {
         log.info("Recebido GET /api/v1/nucleo-relacionamento/check/{}. operacao=DELETE_CHECK", patientId);
-        DeleteCheckResponseDTO response = deleteCheckService.checkDeleteStatusByPatientId(patientId);
+        CheckResponseDTO response = checkService.checkDeleteStatusByPatientId(patientId);
         log.info(
                 "GET /api/v1/nucleo-relacionamento/check/{} concluido. canDelete={}, blockedNucleos={}",
                 patientId,

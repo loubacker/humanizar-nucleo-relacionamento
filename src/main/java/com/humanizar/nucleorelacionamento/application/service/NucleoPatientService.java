@@ -36,289 +36,289 @@ import com.humanizar.nucleorelacionamento.domain.port.NucleoPatientResponsavelPo
 @Service
 public class NucleoPatientService {
 
-        private static final Logger log = LoggerFactory.getLogger(NucleoPatientService.class);
-        private static final String AGGREGATE_TYPE = "nucleo_patient";
+    private static final Logger log = LoggerFactory.getLogger(NucleoPatientService.class);
+    private static final String AGGREGATE_TYPE = "nucleo_patient";
 
-        private final NucleoPatientPort nucleoPatientPort;
-        private final NucleoPatientResponsavelPort responsavelPort;
-        private final AbordagemPatientPort abordagemPatientPort;
-        private final OutboxEventPublisher outboxEventPublisher;
-        private final OutboundResponsavelVinculadoMapper outboundResponsavelVinculadoMapper;
-        private final OutboundResponsavelDesvinculadoMapper outboundResponsavelDesvinculadoMapper;
+    private final NucleoPatientPort nucleoPatientPort;
+    private final NucleoPatientResponsavelPort responsavelPort;
+    private final AbordagemPatientPort abordagemPatientPort;
+    private final OutboxEventPublisher outboxEventPublisher;
+    private final OutboundResponsavelVinculadoMapper outboundResponsavelVinculadoMapper;
+    private final OutboundResponsavelDesvinculadoMapper outboundResponsavelDesvinculadoMapper;
 
-        public NucleoPatientService(NucleoPatientPort nucleoPatientPort,
-                        NucleoPatientResponsavelPort responsavelPort,
-                        AbordagemPatientPort abordagemPatientPort,
-                        OutboxEventPublisher outboxEventPublisher,
-                        OutboundResponsavelVinculadoMapper outboundResponsavelVinculadoMapper,
-                        OutboundResponsavelDesvinculadoMapper outboundResponsavelDesvinculadoMapper) {
-                this.nucleoPatientPort = nucleoPatientPort;
-                this.responsavelPort = responsavelPort;
-                this.abordagemPatientPort = abordagemPatientPort;
-                this.outboxEventPublisher = outboxEventPublisher;
-                this.outboundResponsavelVinculadoMapper = outboundResponsavelVinculadoMapper;
-                this.outboundResponsavelDesvinculadoMapper = outboundResponsavelDesvinculadoMapper;
+    public NucleoPatientService(NucleoPatientPort nucleoPatientPort,
+            NucleoPatientResponsavelPort responsavelPort,
+            AbordagemPatientPort abordagemPatientPort,
+            OutboxEventPublisher outboxEventPublisher,
+            OutboundResponsavelVinculadoMapper outboundResponsavelVinculadoMapper,
+            OutboundResponsavelDesvinculadoMapper outboundResponsavelDesvinculadoMapper) {
+        this.nucleoPatientPort = nucleoPatientPort;
+        this.responsavelPort = responsavelPort;
+        this.abordagemPatientPort = abordagemPatientPort;
+        this.outboxEventPublisher = outboxEventPublisher;
+        this.outboundResponsavelVinculadoMapper = outboundResponsavelVinculadoMapper;
+        this.outboundResponsavelDesvinculadoMapper = outboundResponsavelDesvinculadoMapper;
+    }
+
+    @Transactional
+    public void createNucleoPatient(UUID nucleoPatientId, UUID patientId, UUID nucleoId,
+            List<ResponsavelDTO> responsaveis,
+            UUID correlationId,
+            UUID actorId, String userAgent, String originIp) {
+        String corrId = correlationId != null ? correlationId.toString() : null;
+
+        if (nucleoPatientId == null) {
+            throw new NucleoRelacionamentoException(
+                    ReasonCode.VALIDATION_ERROR, corrId, "nucleoPatientId e obrigatório");
         }
 
-        @Transactional
-        public void createNucleoPatient(UUID nucleoPatientId, UUID patientId, UUID nucleoId,
-                        List<ResponsavelDTO> responsaveis,
-                        UUID correlationId,
-                        UUID actorId, String userAgent, String originIp) {
-                String corrId = correlationId != null ? correlationId.toString() : null;
-
-                if (nucleoPatientId == null) {
-                        throw new NucleoRelacionamentoException(
-                                        ReasonCode.VALIDATION_ERROR, corrId, "nucleoPatientId e obrigatorio");
-                }
-
-                if (responsaveis == null || responsaveis.isEmpty()) {
-                        throw new NucleoRelacionamentoException(ReasonCode.RESPONSAVEL_REQUIRED, corrId);
-                }
-
-                if (nucleoPatientPort.existsById(nucleoPatientId)) {
-                        throw new NucleoRelacionamentoException(
-                                        ReasonCode.VALIDATION_ERROR, corrId,
-                                        "nucleoPatientId ja existe: " + nucleoPatientId);
-                }
-
-                Optional<NucleoPatient> existingByPatientAndNucleo = nucleoPatientPort
-                                .findByPatientIdAndNucleoId(patientId, nucleoId);
-                if (existingByPatientAndNucleo.isPresent()
-                                && !nucleoPatientId.equals(existingByPatientAndNucleo.get().getId())) {
-                        throw new NucleoRelacionamentoException(
-                                        ReasonCode.VALIDATION_ERROR, corrId,
-                                        "Conflito de identidade para patientId/nucleoId. expectedNucleoPatientId="
-                                                        + existingByPatientAndNucleo.get().getId()
-                                                        + ", received=" + nucleoPatientId);
-                }
-
-                NucleoPatient nucleo = NucleoPatient.builder()
-                                .id(nucleoPatientId)
-                                .patientId(patientId)
-                                .nucleoId(nucleoId)
-                                .build();
-                NucleoPatient saved = nucleoPatientPort.save(nucleo);
-
-                List<NucleoPatientResponsavel> responsaveisDomain = responsaveis.stream()
-                                .map(responsavelCommand -> new NucleoPatientResponsavel(
-                                                null, saved.getId(), responsavelCommand.responsavelId(),
-                                                parseRole(responsavelCommand.role(), corrId)))
-                                .toList();
-                responsavelPort.saveAll(responsaveisDomain);
-
-                publishVinculado(patientId, nucleoId, responsaveisDomain, saved.getId(), correlationId,
-                                actorId, userAgent, originIp);
-
-                log.info("NucleoPatient criado. id={}, patientId={}, nucleoId={}, responsaveis={}",
-                                saved.getId(), patientId, nucleoId, responsaveisDomain.size());
+        if (responsaveis == null || responsaveis.isEmpty()) {
+            throw new NucleoRelacionamentoException(ReasonCode.RESPONSAVEL_REQUIRED, corrId);
         }
 
-        @Transactional
-        public void applyNucleoPatientSnapshot(UUID patientId, List<NucleoPatientDTO> incomingNucleoCommands,
-                        UUID correlationId,
-                        UUID actorId, String userAgent, String originIp) {
-                String corrId = correlationId != null ? correlationId.toString() : null;
-                if (incomingNucleoCommands == null || incomingNucleoCommands.isEmpty()) {
-                        throw new NucleoRelacionamentoException(
-                                        ReasonCode.VALIDATION_ERROR, corrId, "nucleoPatient e obrigatorio");
-                }
-
-                List<NucleoPatient> currentNucleos = nucleoPatientPort.findAllByPatientId(patientId);
-                Set<UUID> incomingNucleoPatientIds = incomingNucleoCommands.stream()
-                                .map(NucleoPatientDTO::nucleoPatientId)
-                                .collect(Collectors.toSet());
-                Map<UUID, NucleoPatient> currentByNucleoPatientId = currentNucleos.stream()
-                                .collect(Collectors.toMap(NucleoPatient::getId, n -> n));
-
-                for (NucleoPatient current : currentNucleos) {
-                        if (!incomingNucleoPatientIds.contains(current.getId())) {
-                                deleteNucleo(current, patientId, correlationId,
-                                                actorId, userAgent, originIp, corrId);
-                        }
-                }
-
-                for (NucleoPatientDTO incomingNucleoCommand : incomingNucleoCommands) {
-                        NucleoPatient existing = currentByNucleoPatientId.get(incomingNucleoCommand.nucleoPatientId());
-                        if (existing == null) {
-                                if (nucleoPatientPort.existsById(incomingNucleoCommand.nucleoPatientId())) {
-                                        throw new NucleoRelacionamentoException(
-                                                        ReasonCode.VALIDATION_ERROR, corrId,
-                                                        "nucleoPatientId pertence a outro paciente: "
-                                                                        + incomingNucleoCommand.nucleoPatientId());
-                                }
-
-                                createNucleoPatient(incomingNucleoCommand.nucleoPatientId(), patientId,
-                                                incomingNucleoCommand.nucleoId(),
-                                                incomingNucleoCommand.nucleoPatientResponsavel(), correlationId,
-                                                actorId, userAgent, originIp);
-                        } else {
-                                if (!existing.getNucleoId().equals(incomingNucleoCommand.nucleoId())) {
-                                        throw new NucleoRelacionamentoException(
-                                                        ReasonCode.VALIDATION_ERROR, corrId,
-                                                        "nucleoId divergente para nucleoPatientId="
-                                                                        + incomingNucleoCommand.nucleoPatientId()
-                                                                        + ". expected=" + existing.getNucleoId()
-                                                                        + ", received="
-                                                                        + incomingNucleoCommand.nucleoId());
-                                }
-                                reconcileResponsaveis(existing, incomingNucleoCommand.nucleoPatientResponsavel(),
-                                                patientId, correlationId,
-                                                actorId, userAgent, originIp);
-                        }
-                }
+        if (nucleoPatientPort.existsById(nucleoPatientId)) {
+            throw new NucleoRelacionamentoException(
+                    ReasonCode.VALIDATION_ERROR, corrId,
+                    "nucleoPatientId ja existe: " + nucleoPatientId);
         }
 
-        @Transactional
-        public void reconcileNucleoPatients(UUID patientId, List<NucleoPatientDTO> incomingNucleoCommands,
-                        UUID correlationId,
-                        UUID actorId, String userAgent, String originIp) {
-                applyNucleoPatientSnapshot(patientId, incomingNucleoCommands, correlationId, actorId, userAgent,
-                                originIp);
+        Optional<NucleoPatient> existingByPatientAndNucleo = nucleoPatientPort
+                .findByPatientIdAndNucleoId(patientId, nucleoId);
+        if (existingByPatientAndNucleo.isPresent()
+                && !nucleoPatientId.equals(existingByPatientAndNucleo.get().getId())) {
+            throw new NucleoRelacionamentoException(
+                    ReasonCode.VALIDATION_ERROR, corrId,
+                    "Conflito de identidade para patientId/nucleoId. expectedNucleoPatientId="
+                            + existingByPatientAndNucleo.get().getId()
+                            + ", received=" + nucleoPatientId);
         }
 
-        @Transactional
-        public void deleteAllNucleosByPatientId(UUID patientId, UUID correlationId,
-                        UUID actorId, String userAgent, String originIp) {
-                String corrId = correlationId != null ? correlationId.toString() : null;
-                List<NucleoPatient> nucleos = nucleoPatientPort.findAllByPatientId(patientId);
+        NucleoPatient nucleo = NucleoPatient.builder()
+                .id(nucleoPatientId)
+                .patientId(patientId)
+                .nucleoId(nucleoId)
+                .build();
+        NucleoPatient saved = nucleoPatientPort.save(nucleo);
 
-                for (NucleoPatient nucleo : nucleos) {
-                        deleteNucleo(nucleo, patientId, correlationId,
-                                        actorId, userAgent, originIp, corrId);
-                }
+        List<NucleoPatientResponsavel> responsaveisDomain = responsaveis.stream()
+                .map(responsavelCommand -> new NucleoPatientResponsavel(
+                        null, saved.getId(), responsavelCommand.responsavelId(),
+                        parseRole(responsavelCommand.role(), corrId)))
+                .toList();
+        responsavelPort.saveAll(responsaveisDomain);
 
-                log.info("Todos nucleos removidos para patientId={}. total={}", patientId, nucleos.size());
+        publishVinculado(patientId, nucleoId, responsaveisDomain, saved.getId(), correlationId,
+                actorId, userAgent, originIp);
+
+        log.info("NucleoPatient criado. id={}, patientId={}, nucleoId={}, responsaveis={}",
+                saved.getId(), patientId, nucleoId, responsaveisDomain.size());
+    }
+
+    @Transactional
+    public void applyNucleoPatientSnapshot(UUID patientId, List<NucleoPatientDTO> incomingNucleoCommands,
+            UUID correlationId,
+            UUID actorId, String userAgent, String originIp) {
+        String corrId = correlationId != null ? correlationId.toString() : null;
+        if (incomingNucleoCommands == null || incomingNucleoCommands.isEmpty()) {
+            throw new NucleoRelacionamentoException(
+                    ReasonCode.VALIDATION_ERROR, corrId, "nucleoPatient e obrigatorio");
         }
 
-        private void deleteNucleo(NucleoPatient nucleo, UUID patientId,
-                        UUID correlationId,
-                        UUID actorId, String userAgent, String originIp,
-                        String corrId) {
-                if (!abordagemPatientPort.findByNucleoPatientId(nucleo.getId()).isEmpty()) {
-                        throw new NucleoRelacionamentoException(ReasonCode.HAS_ABORDAGEM, corrId);
-                }
+        List<NucleoPatient> currentNucleos = nucleoPatientPort.findAllByPatientId(patientId);
+        Set<UUID> incomingNucleoPatientIds = incomingNucleoCommands.stream()
+                .map(NucleoPatientDTO::nucleoPatientId)
+                .collect(Collectors.toSet());
+        Map<UUID, NucleoPatient> currentByNucleoPatientId = currentNucleos.stream()
+                .collect(Collectors.toMap(NucleoPatient::getId, n -> n));
 
-                List<NucleoPatientResponsavel> responsaveis = responsavelPort.findByNucleoPatientId(nucleo.getId());
-                responsavelPort.deleteByNucleoPatientId(nucleo.getId());
-                nucleoPatientPort.deleteByPatientIdAndNucleoId(patientId, nucleo.getNucleoId());
-
-                if (!responsaveis.isEmpty()) {
-                        publishDesvinculado(patientId, nucleo.getNucleoId(), responsaveis,
-                                        nucleo.getId(), correlationId,
-                                        actorId, userAgent, originIp);
-                }
+        for (NucleoPatient current : currentNucleos) {
+            if (!incomingNucleoPatientIds.contains(current.getId())) {
+                deleteNucleo(current, patientId, correlationId,
+                        actorId, userAgent, originIp, corrId);
+            }
         }
 
-        private void reconcileResponsaveis(NucleoPatient existing,
-                        List<ResponsavelDTO> incomingResponsaveis,
-                        UUID patientId, UUID correlationId,
-                        UUID actorId, String userAgent, String originIp) {
-                List<NucleoPatientResponsavel> currentResponsaveis = responsavelPort
-                                .findByNucleoPatientId(existing.getId());
-
-                Set<UUID> currentIds = currentResponsaveis.stream()
-                                .map(NucleoPatientResponsavel::getResponsavelId)
-                                .collect(Collectors.toSet());
-                Set<UUID> incomingIds = incomingResponsaveis.stream()
-                                .map(ResponsavelDTO::responsavelId)
-                                .collect(Collectors.toSet());
-
-                String corrId = correlationId != null ? correlationId.toString() : null;
-
-                List<NucleoPatientResponsavel> added = incomingResponsaveis.stream()
-                                .filter(responsavelCommand -> !currentIds.contains(responsavelCommand.responsavelId()))
-                                .map(responsavelCommand -> new NucleoPatientResponsavel(
-                                                null, existing.getId(), responsavelCommand.responsavelId(),
-                                                parseRole(responsavelCommand.role(), corrId)))
-                                .toList();
-
-                List<NucleoPatientResponsavel> removed = currentResponsaveis.stream()
-                                .filter(r -> !incomingIds.contains(r.getResponsavelId()))
-                                .toList();
-
-                if (!added.isEmpty() || !removed.isEmpty()) {
-                        // Regrava o estado final para garantir consistencia quando houver add/remove no
-                        // mesmo update.
-                        responsavelPort.deleteByNucleoPatientId(existing.getId());
-                        List<NucleoPatientResponsavel> finalState = incomingResponsaveis.stream()
-                                        .map(responsavelCommand -> new NucleoPatientResponsavel(
-                                                        null, existing.getId(), responsavelCommand.responsavelId(),
-                                                        parseRole(responsavelCommand.role(), corrId)))
-                                        .toList();
-                        responsavelPort.saveAll(finalState);
+        for (NucleoPatientDTO incomingNucleoCommand : incomingNucleoCommands) {
+            NucleoPatient existing = currentByNucleoPatientId.get(incomingNucleoCommand.nucleoPatientId());
+            if (existing == null) {
+                if (nucleoPatientPort.existsById(incomingNucleoCommand.nucleoPatientId())) {
+                    throw new NucleoRelacionamentoException(
+                            ReasonCode.VALIDATION_ERROR, corrId,
+                            "nucleoPatientId pertence a outro paciente: "
+                                    + incomingNucleoCommand.nucleoPatientId());
                 }
 
-                if (!added.isEmpty()) {
-                        publishVinculado(patientId, existing.getNucleoId(), added,
-                                        existing.getId(), correlationId,
-                                        actorId, userAgent, originIp);
+                createNucleoPatient(incomingNucleoCommand.nucleoPatientId(), patientId,
+                        incomingNucleoCommand.nucleoId(),
+                        incomingNucleoCommand.nucleoPatientResponsavel(), correlationId,
+                        actorId, userAgent, originIp);
+            } else {
+                if (!existing.getNucleoId().equals(incomingNucleoCommand.nucleoId())) {
+                    throw new NucleoRelacionamentoException(
+                            ReasonCode.VALIDATION_ERROR, corrId,
+                            "nucleoId divergente para nucleoPatientId="
+                                    + incomingNucleoCommand.nucleoPatientId()
+                                    + ". expected=" + existing.getNucleoId()
+                                    + ", received="
+                                    + incomingNucleoCommand.nucleoId());
                 }
+                reconcileResponsaveis(existing, incomingNucleoCommand.nucleoPatientResponsavel(),
+                        patientId, correlationId,
+                        actorId, userAgent, originIp);
+            }
+        }
+    }
 
-                if (!removed.isEmpty()) {
-                        publishDesvinculado(patientId, existing.getNucleoId(), removed,
-                                        existing.getId(), correlationId,
-                                        actorId, userAgent, originIp);
-                }
+    @Transactional
+    public void reconcileNucleoPatients(UUID patientId, List<NucleoPatientDTO> incomingNucleoCommands,
+            UUID correlationId,
+            UUID actorId, String userAgent, String originIp) {
+        applyNucleoPatientSnapshot(patientId, incomingNucleoCommands, correlationId, actorId, userAgent,
+                originIp);
+    }
+
+    @Transactional
+    public void deleteAllNucleosByPatientId(UUID patientId, UUID correlationId,
+            UUID actorId, String userAgent, String originIp) {
+        String corrId = correlationId != null ? correlationId.toString() : null;
+        List<NucleoPatient> nucleos = nucleoPatientPort.findAllByPatientId(patientId);
+
+        for (NucleoPatient nucleo : nucleos) {
+            deleteNucleo(nucleo, patientId, correlationId,
+                    actorId, userAgent, originIp, corrId);
         }
 
-        private void publishVinculado(UUID patientId, UUID nucleoId,
-                        List<NucleoPatientResponsavel> responsaveis,
-                        UUID aggregateId, UUID correlationId,
-                        UUID actorId, String userAgent, String originIp) {
-                UUID eventId = UUID.randomUUID();
-                List<OutboundNucleoResponsavelDTO> payloads = responsaveis.stream()
-                                .map(r -> new OutboundNucleoResponsavelDTO(r.getResponsavelId(), r.getRole().name()))
-                                .toList();
-                OutboundNucleoPatientDTO nucleoPayload = new OutboundNucleoPatientDTO(nucleoId, payloads);
-                OutboundResponsavelVinculadoDTO payload = new OutboundResponsavelVinculadoDTO(
-                                patientId, List.of(nucleoPayload));
-                OutboundEnvelopeDTO<OutboundResponsavelVinculadoDTO> envelope = outboundResponsavelVinculadoMapper
-                                .toEnvelope(eventId, correlationId, actorId, userAgent, originIp, payload);
+        log.info("Todos nucleos removidos para patientId={}. total={}", patientId, nucleos.size());
+    }
 
-                outboxEventPublisher.publish(
-                                ExchangeCatalog.NUCLEO_RELACIONAMENTO_EVENT,
-                                RoutingKeyCatalog.RESPONSAVEL_VINCULADO_V1,
-                                AGGREGATE_TYPE,
-                                aggregateId,
-                                eventId,
-                                correlationId,
-                                envelope,
-                                actorId, userAgent, originIp);
+    private void deleteNucleo(NucleoPatient nucleo, UUID patientId,
+            UUID correlationId,
+            UUID actorId, String userAgent, String originIp,
+            String corrId) {
+        if (!abordagemPatientPort.findByNucleoPatientId(nucleo.getId()).isEmpty()) {
+            throw new NucleoRelacionamentoException(ReasonCode.HAS_ABORDAGEM, corrId);
         }
 
-        private ResponsavelRole parseRole(String role, String correlationId) {
-                try {
-                        return ResponsavelRole.valueOf(role);
-                } catch (IllegalArgumentException ex) {
-                        throw new NucleoRelacionamentoException(
-                                        ReasonCode.VALIDATION_ERROR, correlationId,
-                                        "Role invalida: " + role);
-                }
+        List<NucleoPatientResponsavel> responsaveis = responsavelPort.findByNucleoPatientId(nucleo.getId());
+        responsavelPort.deleteByNucleoPatientId(nucleo.getId());
+        nucleoPatientPort.deleteByPatientIdAndNucleoId(patientId, nucleo.getNucleoId());
+
+        if (!responsaveis.isEmpty()) {
+            publishDesvinculado(patientId, nucleo.getNucleoId(), responsaveis,
+                    nucleo.getId(), correlationId,
+                    actorId, userAgent, originIp);
+        }
+    }
+
+    private void reconcileResponsaveis(NucleoPatient existing,
+            List<ResponsavelDTO> incomingResponsaveis,
+            UUID patientId, UUID correlationId,
+            UUID actorId, String userAgent, String originIp) {
+        List<NucleoPatientResponsavel> currentResponsaveis = responsavelPort
+                .findByNucleoPatientId(existing.getId());
+
+        Set<UUID> currentIds = currentResponsaveis.stream()
+                .map(NucleoPatientResponsavel::getResponsavelId)
+                .collect(Collectors.toSet());
+        Set<UUID> incomingIds = incomingResponsaveis.stream()
+                .map(ResponsavelDTO::responsavelId)
+                .collect(Collectors.toSet());
+
+        String corrId = correlationId != null ? correlationId.toString() : null;
+
+        List<NucleoPatientResponsavel> added = incomingResponsaveis.stream()
+                .filter(responsavelCommand -> !currentIds.contains(responsavelCommand.responsavelId()))
+                .map(responsavelCommand -> new NucleoPatientResponsavel(
+                        null, existing.getId(), responsavelCommand.responsavelId(),
+                        parseRole(responsavelCommand.role(), corrId)))
+                .toList();
+
+        List<NucleoPatientResponsavel> removed = currentResponsaveis.stream()
+                .filter(r -> !incomingIds.contains(r.getResponsavelId()))
+                .toList();
+
+        if (!added.isEmpty() || !removed.isEmpty()) {
+            // Regrava o estado final para garantir consistencia quando houver add/remove no
+            // mesmo update.
+            responsavelPort.deleteByNucleoPatientId(existing.getId());
+            List<NucleoPatientResponsavel> finalState = incomingResponsaveis.stream()
+                    .map(responsavelCommand -> new NucleoPatientResponsavel(
+                            null, existing.getId(), responsavelCommand.responsavelId(),
+                            parseRole(responsavelCommand.role(), corrId)))
+                    .toList();
+            responsavelPort.saveAll(finalState);
         }
 
-        private void publishDesvinculado(UUID patientId, UUID nucleoId,
-                        List<NucleoPatientResponsavel> responsaveis,
-                        UUID aggregateId, UUID correlationId,
-                        UUID actorId, String userAgent, String originIp) {
-                UUID eventId = UUID.randomUUID();
-                List<OutboundNucleoResponsavelDTO> payloads = responsaveis.stream()
-                                .map(r -> new OutboundNucleoResponsavelDTO(r.getResponsavelId(), r.getRole().name()))
-                                .toList();
-                OutboundNucleoPatientDTO nucleoPayload = new OutboundNucleoPatientDTO(nucleoId, payloads);
-                OutboundResponsavelDesvinculadoDTO payload = new OutboundResponsavelDesvinculadoDTO(
-                                patientId, List.of(nucleoPayload));
-                OutboundEnvelopeDTO<OutboundResponsavelDesvinculadoDTO> envelope = outboundResponsavelDesvinculadoMapper
-                                .toEnvelope(eventId, correlationId, actorId, userAgent, originIp, payload);
-
-                outboxEventPublisher.publish(
-                                ExchangeCatalog.NUCLEO_RELACIONAMENTO_EVENT,
-                                RoutingKeyCatalog.RESPONSAVEL_DESVINCULADO_V1,
-                                AGGREGATE_TYPE,
-                                aggregateId,
-                                eventId,
-                                correlationId,
-                                envelope,
-                                actorId, userAgent, originIp);
+        if (!added.isEmpty()) {
+            publishVinculado(patientId, existing.getNucleoId(), added,
+                    existing.getId(), correlationId,
+                    actorId, userAgent, originIp);
         }
+
+        if (!removed.isEmpty()) {
+            publishDesvinculado(patientId, existing.getNucleoId(), removed,
+                    existing.getId(), correlationId,
+                    actorId, userAgent, originIp);
+        }
+    }
+
+    private void publishVinculado(UUID patientId, UUID nucleoId,
+            List<NucleoPatientResponsavel> responsaveis,
+            UUID aggregateId, UUID correlationId,
+            UUID actorId, String userAgent, String originIp) {
+        UUID eventId = UUID.randomUUID();
+        List<OutboundNucleoResponsavelDTO> payloads = responsaveis.stream()
+                .map(r -> new OutboundNucleoResponsavelDTO(r.getResponsavelId(), r.getRole().name()))
+                .toList();
+        OutboundNucleoPatientDTO nucleoPayload = new OutboundNucleoPatientDTO(nucleoId, payloads);
+        OutboundResponsavelVinculadoDTO payload = new OutboundResponsavelVinculadoDTO(
+                patientId, List.of(nucleoPayload));
+        OutboundEnvelopeDTO<OutboundResponsavelVinculadoDTO> envelope = outboundResponsavelVinculadoMapper
+                .toEnvelope(eventId, correlationId, actorId, userAgent, originIp, payload);
+
+        outboxEventPublisher.publish(
+                ExchangeCatalog.NUCLEO_RELACIONAMENTO_EVENT,
+                RoutingKeyCatalog.RESPONSAVEL_VINCULADO_V1,
+                AGGREGATE_TYPE,
+                aggregateId,
+                eventId,
+                correlationId,
+                envelope,
+                actorId, userAgent, originIp);
+    }
+
+    private ResponsavelRole parseRole(String role, String correlationId) {
+        try {
+            return ResponsavelRole.valueOf(role);
+        } catch (IllegalArgumentException ex) {
+            throw new NucleoRelacionamentoException(
+                    ReasonCode.VALIDATION_ERROR, correlationId,
+                    "Role invalida: " + role);
+        }
+    }
+
+    private void publishDesvinculado(UUID patientId, UUID nucleoId,
+            List<NucleoPatientResponsavel> responsaveis,
+            UUID aggregateId, UUID correlationId,
+            UUID actorId, String userAgent, String originIp) {
+        UUID eventId = UUID.randomUUID();
+        List<OutboundNucleoResponsavelDTO> payloads = responsaveis.stream()
+                .map(r -> new OutboundNucleoResponsavelDTO(r.getResponsavelId(), r.getRole().name()))
+                .toList();
+        OutboundNucleoPatientDTO nucleoPayload = new OutboundNucleoPatientDTO(nucleoId, payloads);
+        OutboundResponsavelDesvinculadoDTO payload = new OutboundResponsavelDesvinculadoDTO(
+                patientId, List.of(nucleoPayload));
+        OutboundEnvelopeDTO<OutboundResponsavelDesvinculadoDTO> envelope = outboundResponsavelDesvinculadoMapper
+                .toEnvelope(eventId, correlationId, actorId, userAgent, originIp, payload);
+
+        outboxEventPublisher.publish(
+                ExchangeCatalog.NUCLEO_RELACIONAMENTO_EVENT,
+                RoutingKeyCatalog.RESPONSAVEL_DESVINCULADO_V1,
+                AGGREGATE_TYPE,
+                aggregateId,
+                eventId,
+                correlationId,
+                envelope,
+                actorId, userAgent, originIp);
+    }
 }

@@ -9,17 +9,17 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
 import com.humanizar.nucleorelacionamento.application.dto.BlockedNucleoDTO;
-import com.humanizar.nucleorelacionamento.application.dto.DeleteCheckResponseDTO;
+import com.humanizar.nucleorelacionamento.application.dto.CheckResponseDTO;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
 
-class DeleteCheckMapperTest {
+class CheckMapperTest {
 
-    private final DeleteCheckMapper mapper = new DeleteCheckMapper();
+    private final CheckMapper mapper = new CheckMapper();
 
     @Test
     void toAllowedShouldReturnCanDeleteTrue() {
-        DeleteCheckResponseDTO response = mapper.toAllowed();
+        CheckResponseDTO response = mapper.toAllowed();
 
         assertEquals(true, response.canDelete());
         assertEquals(null, response.reasonCode());
@@ -32,7 +32,7 @@ class DeleteCheckMapperTest {
         UUID nucleoId = UUID.randomUUID();
         List<BlockedNucleoDTO> blocked = List.of(new BlockedNucleoDTO(nucleoId, 2));
 
-        DeleteCheckResponseDTO response = mapper.toBlocked(blocked);
+        CheckResponseDTO response = mapper.toBlocked(blocked);
 
         assertEquals(false, response.canDelete());
         assertEquals(ReasonCode.HAS_ABORDAGEM.name(), response.reasonCode());

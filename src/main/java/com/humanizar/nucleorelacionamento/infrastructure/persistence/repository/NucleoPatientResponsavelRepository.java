@@ -13,5 +13,7 @@ public interface NucleoPatientResponsavelRepository extends JpaRepository<Nucleo
 
     List<NucleoPatientResponsavelEntity> findByNucleoPatientId(UUID nucleoPatientId);
 
+    List<NucleoPatientResponsavelEntity> findByNucleoPatientIdIn(List<UUID> nucleoPatientIds);
+
     void deleteByNucleoPatientId(UUID nucleoPatientId);
 }

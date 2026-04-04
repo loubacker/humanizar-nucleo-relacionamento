@@ -45,6 +45,17 @@ public class AbordagemPatientAdapter implements AbordagemPatientPort {
     }
 
     @Override
+    public List<AbordagemPatient> findAllAbordagensByNucleoPatientId(List<UUID> nucleoPatientIds) {
+        if (nucleoPatientIds == null || nucleoPatientIds.isEmpty()) {
+            return List.of();
+        }
+
+        return abordagemPatientRepository.findByNucleoPatientIdIn(nucleoPatientIds).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public void deleteByNucleoPatientId(UUID nucleoPatientId) {
         abordagemPatientRepository.deleteByNucleoPatientId(nucleoPatientId);
     }

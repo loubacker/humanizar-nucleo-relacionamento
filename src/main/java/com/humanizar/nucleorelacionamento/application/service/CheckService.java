@@ -7,8 +7,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 import com.humanizar.nucleorelacionamento.application.dto.BlockedNucleoDTO;
-import com.humanizar.nucleorelacionamento.application.dto.DeleteCheckResponseDTO;
-import com.humanizar.nucleorelacionamento.application.mapper.DeleteCheckMapper;
+import com.humanizar.nucleorelacionamento.application.dto.CheckResponseDTO;
+import com.humanizar.nucleorelacionamento.application.mapper.CheckMapper;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.NucleoPatient;
 import com.humanizar.nucleorelacionamento.domain.model.enums.ReasonCode;
@@ -16,32 +16,32 @@ import com.humanizar.nucleorelacionamento.domain.port.AbordagemPatientPort;
 import com.humanizar.nucleorelacionamento.domain.port.NucleoPatientPort;
 
 @Service
-public class DeleteCheckService {
+public class CheckService {
 
     private final NucleoPatientPort nucleoPatientPort;
     private final AbordagemPatientPort abordagemPatientPort;
-    private final DeleteCheckMapper deleteCheckMapper;
+    private final CheckMapper checkMapper;
 
-    public DeleteCheckService(
+    public CheckService(
             NucleoPatientPort nucleoPatientPort,
             AbordagemPatientPort abordagemPatientPort,
-            DeleteCheckMapper deleteCheckMapper) {
+            CheckMapper checkMapper) {
         this.nucleoPatientPort = nucleoPatientPort;
         this.abordagemPatientPort = abordagemPatientPort;
-        this.deleteCheckMapper = deleteCheckMapper;
+        this.checkMapper = checkMapper;
     }
 
-    public DeleteCheckResponseDTO checkDeleteStatusByPatientId(UUID patientId) {
+    public CheckResponseDTO checkDeleteStatusByPatientId(UUID patientId) {
         if (patientId == null) {
             throw new NucleoRelacionamentoException(
                     ReasonCode.VALIDATION_ERROR,
                     null,
-                    "patientId e obrigatorio");
+                    "patientId é obrigatório");
         }
 
         List<NucleoPatient> nucleos = nucleoPatientPort.findAllByPatientId(patientId);
         if (nucleos.isEmpty()) {
-            return deleteCheckMapper.toAllowed();
+            return checkMapper.toAllowed();
         }
 
         List<BlockedNucleoDTO> blocked = new ArrayList<>();
@@ -53,8 +53,8 @@ public class DeleteCheckService {
         }
 
         if (blocked.isEmpty()) {
-            return deleteCheckMapper.toAllowed();
+            return checkMapper.toAllowed();
         }
-        return deleteCheckMapper.toBlocked(blocked);
+        return checkMapper.toBlocked(blocked);
     }
 }
