@@ -30,13 +30,7 @@ public class NucleoRelacionamentoExceptionHandler {
         int status = reasonCode.getStatusCode();
         String path = request != null ? request.getRequestURI() : null;
 
-        log.error(
-                "Erro no processamento HTTP. reasonCode={}, status={}, path={}, causa={}",
-                reasonCode.name(),
-                status,
-                path,
-                rootCauseMessage(exception),
-                exception);
+        logException(status, reasonCode.name(), path, exception);
 
         NucleoRelacionamentoErrorResponseDTO body = new NucleoRelacionamentoErrorResponseDTO(
                 status,
@@ -51,6 +45,22 @@ public class NucleoRelacionamentoExceptionHandler {
     private HttpStatus resolveStatus(int statusCode) {
         HttpStatus status = HttpStatus.resolve(statusCode);
         return status != null ? status : HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+
+    private void logException(
+            int status,
+            String reasonCode,
+            String path,
+            NucleoRelacionamentoException exception) {
+        String message = "Erro no processamento HTTP. reasonCode={}, status={}, path={}, causa={}";
+        String rootCauseMessage = rootCauseMessage(exception);
+
+        if (status >= 500) {
+            log.error(message, reasonCode, status, path, rootCauseMessage, exception);
+            return;
+        }
+
+        log.warn(message, reasonCode, status, path, rootCauseMessage);
     }
 
     private String rootCauseMessage(Throwable throwable) {
