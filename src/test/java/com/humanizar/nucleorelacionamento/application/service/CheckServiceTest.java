@@ -9,10 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.humanizar.nucleorelacionamento.application.dto.CheckResponseDTO;
+import com.humanizar.nucleorelacionamento.application.mapper.CheckMapper;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.AbordagemPatient;
 import com.humanizar.nucleorelacionamento.domain.model.NucleoPatient;
@@ -28,6 +30,9 @@ class CheckServiceTest {
 
     @Mock
     private AbordagemPatientPort abordagemPatientPort;
+
+    @Spy
+    private CheckMapper checkMapper = new CheckMapper();
 
     @InjectMocks
     private CheckService service;

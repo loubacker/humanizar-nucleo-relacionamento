@@ -1,8 +1,5 @@
 package com.humanizar.nucleorelacionamento.infrastructure.config;
 
-import java.util.Arrays;
-import java.util.List;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +7,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class CorsConfig {
@@ -20,11 +20,21 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         List<String> allowedOrigins = Arrays.asList(
                 "http://localhost:*",
-                "http://127.0.0.1:*",
-                "http://10.*.*.*:*");
+                "http://127.0.0.1:*");
 
         log.info("Configurando CORS com origins permitidas: {}", allowedOrigins);
 
+        CorsConfiguration configuration = getCorsConfiguration(allowedOrigins);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+
+        log.info("CORS bean criado e registrado para padrão: /**");
+
+        return source;
+    }
+
+    private static CorsConfiguration getCorsConfiguration(List<String> allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(allowedOrigins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
@@ -40,12 +50,6 @@ public class CorsConfig {
                 "X-Page-Size"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
-
-        log.info("CORS bean criado e registrado para padrão: /**");
-
-        return source;
+        return configuration;
     }
 }

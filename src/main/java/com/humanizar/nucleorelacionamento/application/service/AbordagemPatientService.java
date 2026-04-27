@@ -82,7 +82,12 @@ public class AbordagemPatientService {
                     .collect(Collectors.toSet());
             Set<UUID> incomingIds = Set.copyOf(nucleoAbordagemCommand.abordagemId());
 
-            // Novas abordagens
+            if (incomingIds.isEmpty()) {
+                log.info("Reconciliação programa recebeu limpeza total de abordagens. nucleoPatientId={}, correlationId={}",
+                        nucleoAbordagemCommand.nucleoPatientId(),
+                        correlationId);
+            }
+
             List<AbordagemPatient> toAdd = incomingIds.stream()
                     .filter(id -> !currentIds.contains(id))
                     .map(id -> new AbordagemPatient(null, nucleoAbordagemCommand.nucleoPatientId(), id))
@@ -91,7 +96,6 @@ public class AbordagemPatientService {
                 abordagemPatientPort.saveAll(toAdd);
             }
 
-            // Abordagens removidas — delete all e re-save as que ficam
             boolean hasRemovals = currentIds.stream().anyMatch(id -> !incomingIds.contains(id));
             if (hasRemovals) {
                 abordagemPatientPort.deleteByNucleoPatientId(nucleoAbordagemCommand.nucleoPatientId());
@@ -124,5 +128,4 @@ public class AbordagemPatientService {
         log.info("Abordagens removidas para patientId={}. total={}, correlationId={}",
                 patientId, totalDeleted, correlationId);
     }
-
 }

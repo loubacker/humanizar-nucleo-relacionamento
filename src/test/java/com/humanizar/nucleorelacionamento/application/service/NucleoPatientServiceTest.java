@@ -14,6 +14,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -25,6 +26,8 @@ import com.humanizar.nucleorelacionamento.application.messaging.catalog.RoutingK
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundEnvelopeDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelDesvinculadoDTO;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.dto.OutboundResponsavelVinculadoDTO;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper.OutboundResponsavelDesvinculadoMapper;
+import com.humanizar.nucleorelacionamento.application.messaging.outbound.mapper.OutboundResponsavelVinculadoMapper;
 import com.humanizar.nucleorelacionamento.application.messaging.outbound.publisher.OutboxEventPublisher;
 import com.humanizar.nucleorelacionamento.domain.exception.NucleoRelacionamentoException;
 import com.humanizar.nucleorelacionamento.domain.model.NucleoPatient;
@@ -49,6 +52,13 @@ class NucleoPatientServiceTest {
 
     @Mock
     private OutboxEventPublisher outboxEventPublisher;
+
+    @Spy
+    private OutboundResponsavelVinculadoMapper outboundResponsavelVinculadoMapper = new OutboundResponsavelVinculadoMapper();
+
+    @Spy
+    private OutboundResponsavelDesvinculadoMapper outboundResponsavelDesvinculadoMapper =
+            new OutboundResponsavelDesvinculadoMapper();
 
     @InjectMocks
     private NucleoPatientService service;

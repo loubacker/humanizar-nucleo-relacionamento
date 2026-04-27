@@ -49,7 +49,7 @@ public class InboundProgramaUpdateMapper {
             String itemPath = "payload[" + i + "]";
             requireField(item, itemPath, correlationId);
             requireField(item.nucleoPatientId(), itemPath + ".nucleoPatientId", correlationId);
-            requireNotEmptyCollection(item.abordagemId(), itemPath + ".abordagemId", correlationId);
+            requireField(item.abordagemId(), itemPath + ".abordagemId", correlationId);
 
             Set<UUID> uniqueAbordagens = new HashSet<>();
             for (int j = 0; j < item.abordagemId().size(); j++) {
